@@ -67,9 +67,9 @@ class HwndWrapperTests(unittest.TestCase):
         # start the application
         self.app = Application()
         if is_x64():
-            self.app.start_(r"C:\Windows\System32\calc.exe")
-        else:
             self.app.start_(r"C:\Windows\SysWOW64\calc.exe")
+        else:
+            self.app.start_(r"C:\Windows\System32\calc.exe")
 
         self.dlg = self.app.Calculator
         self.dlg.MenuSelect('View->Scientific\tAlt+2')
