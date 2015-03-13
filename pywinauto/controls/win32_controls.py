@@ -24,6 +24,7 @@ from __future__ import unicode_literals
 
 __revision__ = "$Revision$"
 
+import sys
 import time
 
 import ctypes
@@ -41,6 +42,15 @@ from ..RemoteMemoryBlock import RemoteMemoryBlock
 
 from .. import tests
 from ..timings import Timings
+
+
+# portability helpers
+if six.PY3:
+    create_buf = lambda l: ctypes.create_unicode_buffer(l)
+    enc_buf = lambda t: t.value.encode(sys.stdout.encoding,'ignore').decode('utf-8','ignore')
+else:
+    create_buf = lambda l: ctypes.create_string_buffer(l)
+    enc_buf = lambda t: t.value.decode('utf-8','ignore')
 
 #====================================================================
 class ButtonWrapper(HwndWrapper.HwndWrapper):
@@ -224,15 +234,9 @@ def _get_multiple_text_items(wrapper, count_msg, item_len_msg, item_get_msg):
     # get the text for each item in the combobox
     for i in range(0, num_items):
         text_len = wrapper.SendMessage (item_len_msg, i, 0)
-
-        text = ctypes.create_unicode_buffer(text_len + 1)
-
+        text = create_buf(text_len+1)
         wrapper.SendMessage(item_get_msg, i, ctypes.byref(text))
-
-        if six.PY3:
-            texts.append(text.value.replace('\u200e', ''))
-        else:
-            texts.append(text.value.encode('unicode-internal')) #ctypes.wstring_at(ctypes.addressof(text)))
+        texts.append(enc_buf(text))
 
     return texts
 
@@ -632,17 +636,14 @@ class EditWrapper(HwndWrapper.HwndWrapper):
 
         text_len = self.LineLength(line_index)
         # create a buffer and set the length at the start of the buffer
-        text = ctypes.create_unicode_buffer(text_len+3)
+        text = create_buf(text_len+3)
         text[0] = six.unichr(text_len)
 
         # retrieve the line itself
         self.SendMessage(
             win32defines.EM_GETLINE, line_index, text) # ctypes.byref(text))
 
-        if six.PY3:
-            return text.value
-        else:
-            return text.value.encode('unicode-internal')[:-1]
+        return enc_buf(text.value)
 
     #-----------------------------------------------------------
     def Texts(self):
@@ -661,15 +662,11 @@ class EditWrapper(HwndWrapper.HwndWrapper):
 
         length = self.SendMessage(win32defines.WM_GETTEXTLENGTH)
 
-        text = ctypes.create_unicode_buffer(length + 1)
+        text = create_buf(length + 1)
 
         self.SendMessage(win32defines.WM_GETTEXT, length + 1, text) #ctypes.byref(text))
 
-        #text = text.value.replace("\r\n", "\n")
-        if six.PY3:
-            return text.value.replace('\u200e', '')
-        else:
-            return text.value.encode('unicode-internal') #ctypes.wstring_at(ctypes.addressof(text))
+        return enc_buf(text.value)
 
     #-----------------------------------------------------------
     def SelectionIndices(self):
@@ -716,7 +713,10 @@ class EditWrapper(HwndWrapper.HwndWrapper):
 
         # replace the selection with
         #buffer = ctypes.c_wchar_p(six.text_type(text))
-        buffer = ctypes.create_string_buffer(text, size=len(text) + 1)
+        if six.PY3:
+            buffer = ctypes.create_unicode_buffer(text, size=len(text) + 1)
+        else:
+            buffer = ctypes.create_string_buffer(text, size=len(text) + 1)
         '''
         remote_mem = RemoteMemoryBlock(self)
         _setTextExStruct = win32structures.SETTEXTEX()
@@ -732,7 +732,7 @@ class EditWrapper(HwndWrapper.HwndWrapper):
         #win32functions.WaitGuiThreadIdle(self)
         #time.sleep(Timings.after_editsetedittext_wait)
 
-        self.actions.log('Set text to the edit box: ' + six.text_type(text))
+        self.actions.log(u'Set text to the edit box: ' + six.text_type(text))
 
         # return this control so that actions can be chained.
         return self
