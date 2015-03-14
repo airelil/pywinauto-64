@@ -496,7 +496,7 @@ class HwndWrapperMouseTests(unittest.TestCase):
         self.dlg.MenuSelect("Edit->Paste")
 
         app2.UntitledNotepad.MenuSelect("File->Exit")
-        app2.Notepad.No.Click()
+        app2.Notepad["Do&n't Save"].Click()
 
         self.assertEquals(self.dlg.Edit.TextBlock(), text*3)
 
