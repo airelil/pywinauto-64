@@ -234,9 +234,11 @@ def _get_multiple_text_items(wrapper, count_msg, item_len_msg, item_get_msg):
     # get the text for each item in the combobox
     for i in range(0, num_items):
         text_len = wrapper.SendMessage (item_len_msg, i, 0)
-        text = create_buf(text_len+1)
-        wrapper.SendMessage(item_get_msg, i, ctypes.byref(text))
-        texts.append(enc_buf(text))
+        text = ctypes.create_unicode_buffer(text_len+1)
+        # XXX temporarily call SendMessage directly 
+        # as the base class method doesn't handle it well
+        win32functions.SendMessage(wrapper, item_get_msg, i, ctypes.byref(text))
+        texts.append(text.value.encode(sys.stdout.encoding,'ignore').decode('utf-8','ignore'))
 
     return texts
 
@@ -643,7 +645,7 @@ class EditWrapper(HwndWrapper.HwndWrapper):
         self.SendMessage(
             win32defines.EM_GETLINE, line_index, text) # ctypes.byref(text))
 
-        return enc_buf(text.value)
+        return enc_buf(text)
 
     #-----------------------------------------------------------
     def Texts(self):
@@ -662,11 +664,13 @@ class EditWrapper(HwndWrapper.HwndWrapper):
 
         length = self.SendMessage(win32defines.WM_GETTEXTLENGTH)
 
-        text = create_buf(length + 1)
+        text =  ctypes.create_unicode_buffer(length + 1)
 
-        self.SendMessage(win32defines.WM_GETTEXT, length + 1, text) #ctypes.byref(text))
+        # XXX temporarily call SendMessage directly 
+        # as the base class method doesn't handle it well
+        win32functions.SendMessage(self,win32defines.WM_GETTEXT, length+1, ctypes.byref(text))
 
-        return enc_buf(text.value)
+        return text.value
 
     #-----------------------------------------------------------
     def SelectionIndices(self):
@@ -711,28 +715,11 @@ class EditWrapper(HwndWrapper.HwndWrapper):
         else:
             self.Select()
 
-        # replace the selection with
-        #buffer = ctypes.c_wchar_p(six.text_type(text))
-        if six.PY3:
-            buffer = ctypes.create_unicode_buffer(text, size=len(text) + 1)
-        else:
-            buffer = ctypes.create_string_buffer(text, size=len(text) + 1)
-        '''
-        remote_mem = RemoteMemoryBlock(self)
-        _setTextExStruct = win32structures.SETTEXTEX()
-        _setTextExStruct.flags = win32defines.ST_SELECTION #| win32defines.ST_UNICODE
-        _setTextExStruct.codepage = win32defines.CP_WINUNICODE
-        
-        remote_mem.Write(_setTextExStruct)
-        
-        self.SendMessage(win32defines.EM_SETTEXTEX, remote_mem, ctypes.byref(buffer))
-        '''
-        self.SendMessage(win32defines.EM_REPLACESEL, True, ctypes.byref(buffer))
-
-        #win32functions.WaitGuiThreadIdle(self)
-        #time.sleep(Timings.after_editsetedittext_wait)
-
-        self.actions.log(u'Set text to the edit box: ' + six.text_type(text))
+        buffer = ctypes.create_unicode_buffer(text, size=len(text) + 1)
+        # XXX temporarily call SendMessage directly 
+        # as the base class method doesn't handle it well
+        win32functions.SendMessage(self, win32defines.EM_REPLACESEL, True, ctypes.byref(buffer))
+        #self.actions.log(u'Set text to the edit box: ' + enc_buf(buffer))
 
         # return this control so that actions can be chained.
         return self
