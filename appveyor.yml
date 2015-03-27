@@ -62,7 +62,7 @@ build: false  # Not a C# project, build stuff at the test step instead.
 
 test_script:
   # Build the compiled extension and run the project tests
-  - "python pywinauto\\unittests\\testall.py
+  - "python pywinauto\\unittests\\testall.py"
 
 after_test:
   # After tests list files in coverage report (just for debug)
