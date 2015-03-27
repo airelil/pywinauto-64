@@ -62,12 +62,10 @@ build: false  # Not a C# project, build stuff at the test step instead.
 
 test_script:
   # Build the compiled extension and run the project tests
-  #- "%CMD_IN_ENV% python setup.py nosetests"
   - "python pywinauto\\unittests\\testall.py
 
 after_test:
   # After tests list files in coverage report (just for debug)
-  #- "%CMD_IN_ENV% python setup.py bdist_wheel bdist_wininst"
   - ps: "ls dist"
 
 artifacts:
