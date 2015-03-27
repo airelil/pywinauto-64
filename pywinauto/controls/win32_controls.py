@@ -24,7 +24,7 @@ from __future__ import unicode_literals
 
 __revision__ = "$Revision$"
 
-import sys
+import locale
 import time
 
 import ctypes
@@ -43,14 +43,7 @@ from ..RemoteMemoryBlock import RemoteMemoryBlock
 from .. import tests
 from ..timings import Timings
 
-
-# portability helpers
-if six.PY3:
-    create_buf = lambda l: ctypes.create_unicode_buffer(l)
-    enc_buf = lambda t: t.value.encode(sys.stdout.encoding,'ignore').decode('utf-8','ignore')
-else:
-    create_buf = lambda l: ctypes.create_string_buffer(l)
-    enc_buf = lambda t: t.value.decode('utf-8','ignore')
+enc_buf = lambda v: v.encode(locale.getpreferredencoding(),'ignore')
 
 #====================================================================
 class ButtonWrapper(HwndWrapper.HwndWrapper):
@@ -238,7 +231,7 @@ def _get_multiple_text_items(wrapper, count_msg, item_len_msg, item_get_msg):
         # XXX temporarily call SendMessage directly 
         # as the base class method doesn't handle it well
         win32functions.SendMessage(wrapper, item_get_msg, i, ctypes.byref(text))
-        texts.append(text.value.encode(sys.stdout.encoding,'ignore').decode('utf-8','ignore'))
+        texts.append(text.value)
 
     return texts
 
@@ -638,14 +631,14 @@ class EditWrapper(HwndWrapper.HwndWrapper):
 
         text_len = self.LineLength(line_index)
         # create a buffer and set the length at the start of the buffer
-        text = create_buf(text_len+3)
+        text = ctypes.create_unicode_buffer(text_len+3)
         text[0] = six.unichr(text_len)
 
         # retrieve the line itself
         self.SendMessage(
             win32defines.EM_GETLINE, line_index, text) # ctypes.byref(text))
 
-        return enc_buf(text)
+        return text
 
     #-----------------------------------------------------------
     def Texts(self):
@@ -719,7 +712,7 @@ class EditWrapper(HwndWrapper.HwndWrapper):
         # XXX temporarily call SendMessage directly 
         # as the base class method doesn't handle it well
         win32functions.SendMessage(self, win32defines.EM_REPLACESEL, True, ctypes.byref(buffer))
-        #self.actions.log(u'Set text to the edit box: ' + enc_buf(buffer))
+        self.actions.log(u'Set text to the edit box: ' + enc_buf(buffer))
 
         # return this control so that actions can be chained.
         return self
