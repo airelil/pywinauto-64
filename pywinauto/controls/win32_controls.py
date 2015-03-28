@@ -24,7 +24,6 @@ from __future__ import unicode_literals
 
 __revision__ = "$Revision$"
 
-import locale
 import time
 
 import ctypes
@@ -42,8 +41,6 @@ from ..RemoteMemoryBlock import RemoteMemoryBlock
 
 from .. import tests
 from ..timings import Timings
-
-enc_buf = lambda v: v.encode(locale.getpreferredencoding(),'ignore')
 
 #====================================================================
 class ButtonWrapper(HwndWrapper.HwndWrapper):
@@ -638,7 +635,7 @@ class EditWrapper(HwndWrapper.HwndWrapper):
         self.SendMessage(
             win32defines.EM_GETLINE, line_index, text) # ctypes.byref(text))
 
-        return text
+        return text.value
 
     #-----------------------------------------------------------
     def Texts(self):
@@ -657,7 +654,7 @@ class EditWrapper(HwndWrapper.HwndWrapper):
 
         length = self.SendMessage(win32defines.WM_GETTEXTLENGTH)
 
-        text =  ctypes.create_unicode_buffer(length + 1)
+        text = ctypes.create_unicode_buffer(length + 1)
 
         # XXX temporarily call SendMessage directly 
         # as the base class method doesn't handle it well
@@ -712,7 +709,7 @@ class EditWrapper(HwndWrapper.HwndWrapper):
         # XXX temporarily call SendMessage directly 
         # as the base class method doesn't handle it well
         win32functions.SendMessage(self, win32defines.EM_REPLACESEL, True, ctypes.byref(buffer))
-        self.actions.log(u'Set text to the edit box: ' + enc_buf(buffer))
+        self.actions.log(u'Set text to the edit box: ' + repr(buffer.value))
 
         # return this control so that actions can be chained.
         return self
