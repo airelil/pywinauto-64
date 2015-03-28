@@ -33,7 +33,7 @@ install:
     - ECHO "Filesystem root:"
     - ps: "ls \"C:/\""
     - ECHO "Notepad location (XXX DEBUG)"
-    - ps: "ls C:\\Windows\\System32\\notepad.exe"
+    - ps: "ls C:/Windows/System32/notepad.exe"
 
   # install the appropriate Miniconda (Py2/Py3, 32/64 bit),
   # as well as pywin32, pillow and coverage 
