@@ -1,5 +1,8 @@
-# based on https://github.com/ogrisel/python-appveyor-demo
+# Based on https://github.com/ogrisel/python-appveyor-demo
 # and https://github.com/jjhelmus/appveyor-build-conda-pyart
+#
+# Hint: before committing any changes in the yaml file verify it in 
+# the yaml online parser: http://yaml-online-parser.appspot.com/
 #
 environment:
   global:
@@ -32,10 +35,11 @@ os:
   - unstable # Unstable worker image with logged in user, desktop and interactive build agent
 
 install:
-  - ECHO "Filesystem root:"
-  - ps: "ls \"C:/\""
-  - ECHO "Notepad location (XXX DEBUG)"
-  - ps: "ls C:\\Windows\\System32\\notepad.exe"
+  # Some listings for debug only
+  #- ECHO "Filesystem root:"
+  #- ps: "ls \"C:/\""
+  #- ECHO "Notepad location "
+  #- ps: "ls C:\\Windows\\System32\\notepad.exe"
 
   # install the appropriate Miniconda (Py2/Py3, 32/64 bit),
   # as well as pywin32, pillow and coverage
@@ -50,11 +54,11 @@ test_script:
 
 after_test:
   # After tests list files in coverage report (just for debug)
-  - ps: "ls Coverage_report"
+  #- ps: "ls Coverage_report"
 
 artifacts:
   # Archive the generated coverage report in the ci.appveyor.com build report.
-  - path: Coverage_report\*
+  - path: Coverage_report
 
 #on_success:
 #  - TODO: 
