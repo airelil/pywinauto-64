@@ -13,30 +13,26 @@ environment:
       PYTHON_VERSION: "2.7"
       PYTHON_ARCH: "32"
       CONDA_PY: "27"
-      #CONDA_NPY: "18"
 
-    - PYTHON: "C:\\Python27_32"
-      PYTHON_VERSION: "2.7"
+    - PYTHON: "C:\\Python34_32"
+      PYTHON_VERSION: "3.4"
       PYTHON_ARCH: "32"
-      CONDA_PY: "27"
-      #CONDA_NPY: "19"
+      CONDA_PY: "34"
 
     - PYTHON: "C:\\Python27_64"
       PYTHON_VERSION: "2.7"
       PYTHON_ARCH: "64"
       CONDA_PY: "27"
-      #CONDA_NPY: "18"
 
-    - PYTHON: "C:\\Python27_64"
-      PYTHON_VERSION: "2.7"
+    - PYTHON: "C:\\Python34_64"
+      PYTHON_VERSION: "3.4"
       PYTHON_ARCH: "64"
-      CONDA_PY: "27"
-      #CONDA_NPY: "19"
+      CONDA_PY: "34"
 
 install:
   # install the appropriate Miniconda (Py2/Py3, 32/64 bit),
-  # as well as conda-build and the binstar CLI
-  - powershell .\\install.ps1
+  # as well as pywin32, pillow and coverage 
+  - "powershell ./ci/appveyor/install.ps1"
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
 
 build: false  # Not a C# project, build stuff at the test step instead.
