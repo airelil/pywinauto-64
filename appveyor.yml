@@ -4,6 +4,10 @@
 # Hint: before committing any changes in the yaml file verify it in 
 # the yaml online parser: http://yaml-online-parser.appspot.com/
 #
+
+# fetch repository as a zip archive
+shallow_clone: true                 # default is "false"
+
 environment:
   global:
     # SDK v7.0 MSVC Express 2008's SetEnv.cmd script will fail if the
