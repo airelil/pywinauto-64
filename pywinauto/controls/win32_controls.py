@@ -632,7 +632,9 @@ class EditWrapper(HwndWrapper.HwndWrapper):
         text[0] = six.unichr(text_len)
 
         # retrieve the line itself
-        self.SendMessage(
+        # XXX temporarily call SendMessage directly 
+        # as the base class method doesn't handle it well
+        win32functions.SendMessage(self,
             win32defines.EM_GETLINE, line_index, text) # ctypes.byref(text))
 
         return text.value
