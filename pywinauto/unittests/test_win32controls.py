@@ -351,7 +351,7 @@ class EditTestCases(unittest.TestCase):
         self.test_data = self.test_data.replace(repr("\xef\xbb\xbf"), "")
         #stick to unicode() : self.test_data = self.test_data.encode('utf-8', 'ignore') # XXX: decode raises UnicodeEncodeError even if 'ignore' is used!
         print('self.test_data:')
-        print(self.test_data)
+        print(repr(self.test_data))
 
         app.start_("Notepad.exe " + test_file)
 
