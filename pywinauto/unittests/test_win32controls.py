@@ -349,7 +349,7 @@ class EditTestCases(unittest.TestCase):
             self.test_data = f.read()
         # remove the BOM if it exists
         self.test_data = self.test_data.replace(repr("\xef\xbb\xbf"), "")
-        self.test_data = self.test_data.encode('utf-8', 'ignore') # XXX: decode raises UnicodeEncodeError even if 'ignore' is used!
+        #stick to unicode() : self.test_data = self.test_data.encode('utf-8', 'ignore') # XXX: decode raises UnicodeEncodeError even if 'ignore' is used!
         print('self.test_data:')
         print(self.test_data)
 
