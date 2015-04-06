@@ -552,10 +552,10 @@ class DialogTestCases(unittest.TestCase):
         """Validate that the client area rect is the right size
         (comparing against the full rectangle)"""
         clientarea = self.calc.ClientAreaRect()
-        self.assertEquals(self.calc.Rectangle().left + 3, clientarea.left)
-        self.assertEquals(self.calc.Rectangle().top + 43, clientarea.top)
-        self.assertEquals(self.calc.Rectangle().right - 3, clientarea.right)
-        self.assertEquals(self.calc.Rectangle().bottom - 3, clientarea.bottom)
+        self.assertEquals(self.calc.Rectangle().left + 8, clientarea.left)
+        self.assertEquals(self.calc.Rectangle().top + 50, clientarea.top)
+        self.assertEquals(self.calc.Rectangle().right - 8, clientarea.right)
+        self.assertEquals(self.calc.Rectangle().bottom - 8, clientarea.bottom)
 
 
 class PopupMenuTestCases(unittest.TestCase):
