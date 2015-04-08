@@ -553,6 +553,10 @@ class DialogTestCases(unittest.TestCase):
         (comparing against the full rectangle)"""
         clientarea = self.calc.ClientAreaRect()
         # debug
+        X_res = win32functions.GetSystemMetrics(win32defines.SM_CXSCREEN)
+        Y_res = win32functions.GetSystemMetrics(win32defines.SM_CYSCREEN)
+        print("Windows version: ", sys.getwindowsversion())
+        print("resolution: x=%d y=%d" %( X_res, Y_res))
         print("Client area: left=%d, right=%d, top=%d, bottom=%d" %
              (clientarea.left, clientarea.right, clientarea.top, clientarea.bottom))
         rect = self.calc.Rectangle()
