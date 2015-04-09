@@ -88,6 +88,11 @@ function UpdateConda ($python_home) {
 
 
 function main () {
+    $CurrentResolution = Get-DisplayResolution
+    Write-Host "Current resolution: " $CurrentResolution
+    If ($CurrentResolution -ne "1920x1080") {
+        Set-DisplayResolution -Width 1920 -Height 1080 -Force}
+    }
     InstallMiniconda $env:PYTHON_VERSION $env:PYTHON_ARCH $env:PYTHON
     UpdateConda $env:PYTHON
     InstallCondaPackages $env:PYTHON "pywin32 Pillow coverage"
