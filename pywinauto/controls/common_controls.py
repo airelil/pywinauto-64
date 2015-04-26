@@ -631,7 +631,7 @@ class _treeview_element(object):
         #self.tree_ctrl.
 
     #----------------------------------------------------------------
-    def ClickInput(self, button = "left", double = False, where = "text", pressed = ""):
+    def ClickInput(self, button = "left", double = False, wheel_dist = 0, where = "text", pressed = ""):
         """Click on the treeview item
 
         where can be any one of "text", "icon", "button", "check"
@@ -682,6 +682,7 @@ class _treeview_element(object):
             button,
             coords = (point_to_click.x, point_to_click.y),
             double = double,
+            wheel_dist = wheel_dist,
             pressed = pressed)
 
     #----------------------------------------------------------------
@@ -1782,15 +1783,16 @@ class _toolbar_button(object):
         return self.State() & win32defines.TBSTATE_ENABLED
 
     #----------------------------------------------------------------
-    def Click(self):
-        "Left click on the Toolbar button"
-        self.toolbar_ctrl.Click(button='left', coords = self.Rectangle())
+    def Click(self, button = "left", pressed = ""):
+        "Click on the Toolbar button"
+        self.toolbar_ctrl.Click(button=button, coords = self.Rectangle(), pressed=pressed)
         time.sleep(Timings.after_toobarpressbutton_wait)
 
     #----------------------------------------------------------------
-    def ClickInput(self, double = False):
-        "Left click on the Toolbar button"
-        self.toolbar_ctrl.ClickInput(button='left', coords = self.Rectangle().mid_point(), double=double)
+    def ClickInput(self, button = "left", double = False, wheel_dist = 0, pressed = ""):
+        "Click on the Toolbar button"
+        self.toolbar_ctrl.ClickInput(button=button, coords = self.Rectangle().mid_point(),
+                                     double=double, wheel_dist=wheel_dist, pressed=pressed)
         time.sleep(Timings.after_toobarpressbutton_wait)
 
 #====================================================================
@@ -2043,27 +2045,10 @@ class ToolbarWrapper(HwndWrapper.HwndWrapper):
     def PressButton(self, button_identifier, exact = True):
         "Find where the button is and click it"
 
-        '''texts = self.Texts()
-        if isinstance(button_identifier, six.string_types):
-
-            # one of these will be returned for the matching
-            # text
-            indices = [i for i in range(0, len(texts[1:]))]
-
-            # find which index best matches that text
-            button_index = findbestmatch.find_best_match(
-                button_identifier, texts[1:], indices)
-            self.actions.log('Pressing toolbar button by text "' + str(button_identifier) + '" (found = "' + str(texts[1:][button_index]) + '")')
-
-        else:
-            button_index = button_identifier
-            self.actions.log('Pressing toolbar button number ' + str(button_index) + ' ("' + str(texts[1:][button_index]) + '")')
-
-        button_info = self.GetButton(button_index)'''
         msg = 'Clicking "' + self.WindowText() + '" toolbar button "' + str(button_identifier) + '"'
         self.actions.logSectionStart(msg)
         self.actions.log(msg)
-        button = self.Button(button_identifier, exact=exact) #button_info.idCommand) #button_index)
+        button = self.Button(button_identifier, exact=exact)
 
         # transliterated from
         # http://source.winehq.org/source/dlls/comctl32/toolbar.c
@@ -2073,8 +2058,6 @@ class ToolbarWrapper(HwndWrapper.HwndWrapper):
             button.ClickInput()
         else:
             raise RuntimeError('Toolbar button "' + str(button_identifier) + '" is disabled! Cannot click it.')
-            #self.actions.log('WARNING! Toolbar button is disabled!!! But trying to click it any way!')
-            #button.ClickInput()
         self.actions.logSectionEnd()
 
     #----------------------------------------------------------------

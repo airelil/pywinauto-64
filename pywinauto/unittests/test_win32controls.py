@@ -550,25 +550,15 @@ class DialogTestCases(unittest.TestCase):
 
     def testClientAreaRect(self):
         """Validate that the client area rect is the right size
-        (comparing against the full rectangle)"""
+        (comparing against the full rectangle)
+        Notice that we run an approximate comparison as the actual
+        area size depends on Windows OS and a current desktop theme"""
         clientarea = self.calc.ClientAreaRect()
-        # debug
-        X_res = win32functions.GetSystemMetrics(win32defines.SM_CXSCREEN)
-        Y_res = win32functions.GetSystemMetrics(win32defines.SM_CYSCREEN)
-        print("Windows version: ", sys.getwindowsversion())
-        print("resolution: x=%d y=%d" %( X_res, Y_res))
-        print("Client area: left=%d, right=%d, top=%d, bottom=%d" %
-             (clientarea.left, clientarea.right, clientarea.top, clientarea.bottom))
-        rect = self.calc.Rectangle()
-        print("Rectangle: left=%d, right=%d, top=%d, bottom=%d" %
-             (rect.left, rect.right, rect.top, rect.bottom))
-        print("offsets: left=%d, right=%d, top=%d, bottom=%d" %
-             (clientarea.left-rect.left, clientarea.right-rect.right, 
-              clientarea.top-rect.top, clientarea.bottom-rect.bottom))
-        self.assertEquals(self.calc.Rectangle().left + 8, clientarea.left)
-        self.assertEquals(self.calc.Rectangle().top + 50, clientarea.top)
-        self.assertEquals(self.calc.Rectangle().right - 8, clientarea.right)
-        self.assertEquals(self.calc.Rectangle().bottom - 8, clientarea.bottom)
+        rectangle = self.calc.Rectangle()
+        self.failIf((clientarea.left - rectangle.left) > 10)
+        self.failIf((clientarea.top - rectangle.top) > 60)
+        self.failIf((rectangle.right - clientarea.right) > 10)
+        self.failIf((rectangle.bottom - clientarea.bottom) > 10)
 
 
 class PopupMenuTestCases(unittest.TestCase):
