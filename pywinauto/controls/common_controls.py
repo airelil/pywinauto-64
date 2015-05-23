@@ -156,7 +156,7 @@ class ListViewWrapper(HwndWrapper.HwndWrapper):
             remote_mem.Read(text, col.pszText)
 
             col_props['order'] = col.iOrder
-            col_props['text'] = text.value
+            col_props['text'] = text.value.decode('utf-8')
             col_props['format'] = col.fmt
             col_props['width'] = col.cx
             col_props['image'] = col.iImage
@@ -277,7 +277,7 @@ class ListViewWrapper(HwndWrapper.HwndWrapper):
             remote_mem.Read(char_data, item.pszText)
 
             # and add it to the titles
-            item_data['text'] = char_data.value
+            item_data['text'] = char_data.value.decode('utf-8')
             item_data['state'] = item.state
             item_data['image'] = item.iImage
             item_data['indent'] = item.iIndent
@@ -624,7 +624,8 @@ class _treeview_element(object):
             button,
             coords = (point_to_click.x, point_to_click.y),
             double = double,
-            pressed = pressed)
+            pressed = pressed) #,
+            #absolute = True) # XXX: somehow it works for 64-bit explorer.exe on Win8.1, but it doesn't work for 32-bit ControlSpyV6.exe
 
         # if we use click instead of clickInput - then we need to tell the
         # treeview to update itself
