@@ -1,4 +1,5 @@
-g`"# and https://github.com/jjhelmus/appveyor-build-conda-pyart
+# Based on https://github.com/ogrisel/python-appveyor-demo
+# and https://github.com/jjhelmus/appveyor-build-conda-pyart
 #
 # Hint: before committing any changes in the yaml file verify it in 
 # the yaml online parser: http://yaml-online-parser.appspot.com/
