@@ -49,7 +49,7 @@ build: false  # Not a C# project, build stuff at the test step instead.
 
 test_script:
   # Build the compiled extension and run the project tests
-  - "nosetests  --with-xunit pywinauto\\unittests\\test_common_controls.py"
+  - "nosetests  --with-xunit pywinauto\\unittests\\testall.py"
   # After finishing tests push xml file produced by nose to appveyor console
   - ps: >-
       echo 'Start uploading test results'
