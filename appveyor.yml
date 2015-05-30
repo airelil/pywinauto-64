@@ -53,7 +53,7 @@ test_script:
 
 after_test:
   # After finishing tests push xml file produced by nose to appveyor console
-  - powershell ./pushresults.ps1
+  - "powershell ./pushresults.ps1"
 
 artifacts:
   # Archive the generated coverage report in the ci.appveyor.com build report.
