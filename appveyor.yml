@@ -51,13 +51,10 @@ test_script:
   # Build the compiled extension and run the project tests
   - "nosetests  --with-xunit pywinauto\\unittests\\testall.py"
   # After finishing tests push xml file produced by nose to appveyor console
-  - ps: >-
-      try {
-        $wc = New-Object 'System.Net.WebClient';
-        $wc.UploadFile("https://ci.appveyor.com/api/testresults/xunit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\nosetests.xml));
-      } catch [Exception] {
-        echo $_.Exception|format-list -force;
-      }
+  - ps: ls .\nosetests.xml
+  - ps: type .\nosetests.xml
+  - ps: $wc = New-Object 'System.Net.WebClient';
+  - ps: $wc.UploadFile("https://ci.appveyor.com/api/testresults/xunit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\nosetests.xml));
 
 
 after_test:
