@@ -32,9 +32,7 @@ function run {
     $output = "transformed.xml"
     
     #nosetests  --all-modules --with-xunit pywinauto/unittests/testall.py
-    $utdir = "pywinauto\unittests"
-    $coveropt = "--with-coverage --cover-html --cover-html-dir=Coverage_report --cover-package=pywinauto"
-    nosetests --exclude=testall --with-xunit $coveropt $utdir
+    nosetests --exclude=testall --with-xunit --with-coverage --cover-html --cover-html-dir=Coverage_report --cover-package=pywinauto pywinauto\unittests
     $success = $?
     Write-Host "result code of nosetests:" $success
 
