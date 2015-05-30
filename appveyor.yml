@@ -49,11 +49,11 @@ build: false  # Not a C# project, build stuff at the test step instead.
 
 test_script:
   # Build the compiled extension and run the project tests
-  - "python pywinauto\\unittests\\testall.py"
+  - "nose  --with-xunit pywinauto\\unittests\\test_common_controls.py"
 
 after_test:
-  # After tests list files in coverage report (just for debug)
-  #- ps: "ls Coverage_report"
+  # After finishing tests push xml file produced by nose to appveyor console
+  - powershell ./pushresults.ps1
 
 artifacts:
   # Archive the generated coverage report in the ci.appveyor.com build report.
