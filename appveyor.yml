@@ -52,11 +52,18 @@ test_script:
   - "nosetests  --with-xunit pywinauto\\unittests\\test_common_controls.py"
   # After finishing tests push xml file produced by nose to appveyor console
   - ps: >-
-      echo 'Start uploading test results"
-      $wc = New-Object 'System.Net.WebClient'
-      echo (Resolve-Path .\nosetests.xml)
-      $wc.UploadFile("https://ci.appveyor.com/api/testresults/xunit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\nosetests.xml))
-      echo 'Finished uploading test results'
+      echo 'Start uploading test results'
+      try 
+      {
+        $wc = New-Object 'System.Net.WebClient'
+        echo (Resolve-Path .\nosetests.xml)
+        $wc.UploadFile("https://ci.appveyor.com/api/testresults/xunit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\nosetests.xml))
+        echo 'Finished uploading test results'
+      }
+      catch [Exception]
+      {
+        echo $_.Exception|format-list -force
+      }
 
 after_test:
   # Nothing goes here
