@@ -54,9 +54,10 @@ def text(handle):
         return 'Default IME'
     if class_name == 'MSCTFIME UI':
         return 'M'
-    length = win32functions.SendMessage(handle, win32defines.WM_GETTEXTLENGTH, 0, 0)
-    '''
+    #length = win32functions.SendMessage(handle, win32defines.WM_GETTEXTLENGTH, 0, 0)
+    
     # XXX: there are some very rare cases when WM_GETTEXTLENGTH hangs!
+    # WM_GETTEXTLENGTH may hang even for notepad.exe main window!
     c_length = win32structures.DWORD(0)
     result = win32functions.SendMessageTimeout(handle, win32defines.WM_GETTEXTLENGTH, 0, 0, win32defines.SMTO_ABORTIFHUNG, 500, ctypes.byref(c_length))
     if result == 0:
@@ -64,9 +65,11 @@ def text(handle):
         return ''
     else:
         length = c_length.value
-    '''
+    
     textval = ''
-    if length:
+    # In some rare cases, the length returned by WM_GETTEXTLENGTH is <0.
+    # Guard against this by checking it is >0 (==0 is not of interest):
+    if length > 0:
         length += 1
 
         buffer_ = ctypes.create_unicode_buffer(length)
@@ -136,6 +139,23 @@ def isunicode(handle):
 def isenabled(handle):
     "Return True if the window is enabled"
     return bool(win32functions.IsWindowEnabled(handle))
+
+#=========================================================================
+def is64bitprocess(process_id):
+    """Return True if the specified process is a 64-bit process on x64
+       and False if it is only a 32-bit process running under Wow64.
+       Always return False for x86"""
+
+    from pywinauto.sysinfo import is_x64_OS
+    is32 = True
+    if is_x64_OS():
+        import win32process, win32api
+        phndl = win32api.OpenProcess(0x400, 0, process_id)
+        if phndl:
+          is32 = win32process.IsWow64Process(phndl)
+          #print("is64bitprocess, is32: %d, procid: %d" % (is32, process_id))
+        
+    return (not is32)
 
 #=========================================================================
 def clientrect(handle):

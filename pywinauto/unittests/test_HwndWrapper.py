@@ -30,6 +30,7 @@ import pdb
 import warnings
 
 import ctypes
+import locale
 
 import sys
 sys.path.append(".")
@@ -82,7 +83,6 @@ class HwndWrapperTests(unittest.TestCase):
         #self.dlg.Close()
         self.app.kill_()
 
-
     def testInvalidHandle(self):
         "Test that an exception is raised with an invalid window handle"
         self.assertRaises(InvalidWindowHandle, HwndWrapper, -1)
@@ -102,7 +102,7 @@ class HwndWrapperTests(unittest.TestCase):
 
     def testWindowText(self):
         "Test getting the window Text of the dialog"
-        self.assertEquals(self.ctrl.WindowText(), '\\uf013') #"Backspace")
+        self.assertEquals(self.ctrl.WindowText(), '\uf013') #"Backspace")
 
     def testStyle(self):
 
@@ -122,13 +122,13 @@ class HwndWrapperTests(unittest.TestCase):
             win32defines.WS_EX_LTRREADING |
             win32defines.WS_EX_RIGHTSCROLLBAR)
 
-        '''self.assertEquals(self.dlg.ExStyle(),
+        """self.assertEquals(self.dlg.ExStyle(),
             win32defines.WS_EX_WINDOWEDGE |
             win32defines.WS_EX_LEFT |
             win32defines.WS_EX_LTRREADING |
             win32defines.WS_EX_RIGHTSCROLLBAR |
             win32defines.WS_EX_CONTROLPARENT |
-            win32defines.WS_EX_APPWINDOW)'''
+            win32defines.WS_EX_APPWINDOW)"""
 
     def testControlID(self):
         self.assertEquals(self.ctrl.ControlID(), 83)
@@ -231,7 +231,7 @@ class HwndWrapperTests(unittest.TestCase):
 
     def testTexts(self):
         self.assertEqual(self.dlg.Texts(), ['Calculator'])
-        self.assertEqual(self.ctrl.Texts(), ['\\uf013']) #u'Backspace'])
+        self.assertEqual(self.ctrl.Texts(), ['\uf013']) #u'Backspace'])
         self.assertEqual(self.dlg.ChildWindow(class_name='Static', ctrl_index=5).Texts(), ['0'])
 
     def testClientRects(self):
@@ -323,7 +323,7 @@ class HwndWrapperTests(unittest.TestCase):
     def testMoveWindow(self):
         "Test moving the window"
 
-        dlgClientRect = self.dlg.ClientAreaRect()
+        dlgClientRect = self.dlg.Rectangle() #.ClientAreaRect()
 
         prev_rect = self.ctrl.Rectangle() - dlgClientRect
 
@@ -341,6 +341,10 @@ class HwndWrapperTests(unittest.TestCase):
             )
         time.sleep(0.1)
 
+        print('prev_rect = ', prev_rect)
+        print('new_rect = ', new_rect)
+        print('dlgClientRect = ', dlgClientRect)
+        print('self.ctrl.Rectangle() = ', self.ctrl.Rectangle())
         self.assertEquals(
             self.ctrl.Rectangle(),
             new_rect + dlgClientRect)
@@ -406,14 +410,18 @@ class HwndWrapperTests(unittest.TestCase):
         self.assertTrue(self.app.Window_(title='About Calculator').IsVisible(), True)
 
         # close it
-        self.app.Window_(title='About Calculator').Close()
+        self.app.Window_(title='About Calculator', class_name='#32770').Close(1)
 
         # make sure that it is not visible
-        self.assertRaises(WindowNotFoundError, self.app.Window_(title='About Calculator').WrapperObject())
+        try:
+            #self.assertRaises(WindowNotFoundError, self.app.Window_(title='About Calculator', class_name='#32770').WrapperObject())
+            # vvryabov: TimeoutError is caught by assertRaises, so the second raise is not caught correctly
+            self.app.Window_(title='About Calculator', class_name='#32770').WrapperObject()
+        except WindowNotFoundError:
+            print('WindowNotFoundError exception is raised as expected. OK.')
 
         # make sure the main calculator dialog is still open
         self.assertEquals(self.dlg.IsVisible(), True)
-
 
 
 class HwndWrapperMouseTests(unittest.TestCase):
@@ -425,7 +433,10 @@ class HwndWrapperMouseTests(unittest.TestCase):
 
         # start the application
         self.app = Application()
-        self.app.start_("notepad.exe")
+        if is_x64_Python() or not is_x64_OS():
+            self.app.start_(r"C:\Windows\System32\notepad.exe")
+        else:
+            self.app.start_(r"C:\Windows\SysWOW64\notepad.exe")
 
         # Get the old font
         self.app.UntitledNotepad.MenuSelect("Format->Font")
@@ -438,7 +449,7 @@ class HwndWrapperMouseTests(unittest.TestCase):
         self.app.Font.FontComboBox.Select("Lucida Console")
         self.app.Font.OK.Click()
 
-        self.dlg = self.app.UntitledNotepad
+        self.dlg = self.app.Window_(title='Untitled - Notepad', class_name='Notepad')
         self.ctrl = HwndWrapper(self.dlg.Edit.handle)
         self.dlg.edit.SetEditText("Here is some text\r\n and some more")
 
@@ -450,13 +461,17 @@ class HwndWrapperMouseTests(unittest.TestCase):
         self.app.Font.FontComboBox.Select(self.old_font)
         self.app.Font.FontStyleCombo.Select(self.old_font_style)
         self.app.Font.OK.Click()
+        self.app.Font.WaitNot('visible')
 
         # close the application
         try:
-            self.dlg.Close()
-            if self.dlg["Do&n't Save"].Exists():
-                self.dlg["Do&n't Save"].Click()
+            self.dlg.Close(0.5)
+            if self.app.Notepad["Do&n't Save"].Exists():
+                self.app.Notepad["Do&n't Save"].Click()
+                self.app.Notepad["Do&n't Save"].WaitNot('visible')
         except: # timings.TimeoutError:
+            pass
+        finally:
             self.app.kill_()
 
     #def testText(self):
@@ -483,7 +498,7 @@ class HwndWrapperMouseTests(unittest.TestCase):
     def testMenuSelectNotepad_bug(self):
         "In notepad - MenuSelect Edit->Paste did not work"
 
-        text = 'Here are some unicode characters \xef\xfc\r\n'
+        text = b'Here are some unicode characters \xef\xfc\r\n'
         app2 = Application.start("notepad")
         app2.UntitledNotepad.Edit.SetEditText(text)
 
@@ -496,9 +511,9 @@ class HwndWrapperMouseTests(unittest.TestCase):
         self.dlg.MenuSelect("Edit->Paste")
 
         app2.UntitledNotepad.MenuSelect("File->Exit")
-        app2.Notepad["Don't save"].Click()
+        app2.Window_(title='Notepad', class_name='#32770')["Don't save"].Click()
 
-        self.assertEquals(self.dlg.Edit.TextBlock(), text*3)
+        self.assertEquals(self.dlg.Edit.TextBlock().encode(locale.getpreferredencoding()), text*3)
 
 
 #
@@ -543,7 +558,10 @@ class GetDialogPropsFromHandleTest(unittest.TestCase):
 
         # start the application
         self.app = Application()
-        self.app.start_("notepad.exe")
+        if is_x64_Python() or not is_x64_OS():
+            self.app.start_(r"C:\Windows\System32\notepad.exe")
+        else:
+            self.app.start_(r"C:\Windows\SysWOW64\notepad.exe")
 
         self.dlg = self.app.UntitledNotepad
         self.ctrl = HwndWrapper(self.dlg.Edit.handle)
@@ -552,6 +570,7 @@ class GetDialogPropsFromHandleTest(unittest.TestCase):
         "Close the application after tests"
         # close the application
         #self.dlg.TypeKeys("%{F4}")
+        self.dlg.Close(0.5)
         self.app.kill_()
 
 

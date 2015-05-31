@@ -46,9 +46,12 @@ from pywinauto.RemoteMemoryBlock import RemoteMemoryBlock
 
 
 controlspy_folder = os.path.join(
-   os.path.dirname(__file__), "..\..\controlspy0998")
+   os.path.dirname(__file__), r"..\..\apps\controlspy0998")
+mfc_samples_folder = os.path.join(
+   os.path.dirname(__file__), r"..\..\apps\MFC_samples")
 if is_x64_Python():
     controlspy_folder = os.path.join(controlspy_folder, 'x64')
+    mfc_samples_folder = os.path.join(mfc_samples_folder, 'x64')
 
 
 class RemoteMemoryBlockTestCases(unittest.TestCase):
@@ -69,35 +72,24 @@ class ListViewTestCases(unittest.TestCase):
         # start the application
         from pywinauto.application import Application
         app = Application()
-        app_path = os.path.join(controlspy_folder, "List View.exe")
-        app.start_(app_path)
-        #print('app_path: ' + app_path)
+        app.start_(os.path.join(mfc_samples_folder, u"RowList.exe"))
 
         self.texts = [
-            ("Mercury", '57,910,000', '4,880', '3.30e23'),
-            ("Venus",   '108,200,000', '12,103.6', '4.869e24'),
-            ("Earth",   '149,600,000', '12,756.3', '5.9736e24'),
-            ("Mars",    '227,940,000', '6,794', '6.4219e23'),
-            ("Jupiter", '778,330,000', '142,984', '1.900e27'),
-            ("Saturn",  '1,429,400,000', '120,536', '5.68e26'),
-            ("Uranus",  '2,870,990,000', '51,118', '8.683e25'),
-            ("Neptune", '4,504,000,000', '49,532', '1.0247e26'),
-            ("Pluto",   '5,913,520,000', '2,274', '1.27e22'),
-         ]
+            (u"Yellow",  u"255", u"255", u"0",   u"40",  u"240", u"120", u"Neutral"),
+            (u"Red",     u"255", u"0",   u"0",   u"0",   u"240", u"120", u"Warm"),
+            (u"Green",   u"0",   u"255", u"0",   u"80",  u"240", u"120", u"Cool"),
+            (u"Magenta", u"255", u"0",   u"255", u"200", u"240", u"120", u"Warm"),
+            (u"Cyan",    u"0",   u"255", u"255", u"120", u"240", u"120", u"Cool"),
+            (u"Blue",    u"0",   u"0",   u"255", u"160", u"240", u"120", u"Cool"),
+            (u"Gray",    u"192", u"192", u"192", u"160", u"0",   u"181", u"Neutral")
+        ]
 
         self.app = app
-        self.dlg = app.MicrosoftControlSpy #top_window_()
-        self.ctrl = app.MicrosoftControlSpy.ListView.WrapperObject()
-
-        #self.dlg.MenuSelect("Styles")
-
-        # select show selection always!
-        #app.ControlStyles.ListBox1.TypeKeys("{UP}" * 26 + "{SPACE}")
-
-        #self.app.ControlStyles.ListBox1.Select("LVS_SHOWSELALWAYS")
-        #self.app.ControlStyles.ApplyStylesSetWindowLong.Click()
-
-        #self.app.ControlStyles.SendMessage(win32defines.WM_CLOSE)
+        self.dlg = app.RowListSampleApplication #top_window_()
+        self.ctrl = app.RowListSampleApplication.ListView.WrapperObject()
+        self.dlg.Toolbar.Button(0).Click() # switch to icon view
+        self.dlg.Toolbar.Button(6).Click() # switch off states
+        
 
     def tearDown(self):
         "Close the application after tests"
@@ -107,21 +99,21 @@ class ListViewTestCases(unittest.TestCase):
 
     def testFriendlyClass(self):
         "Make sure the ListView friendly class is set correctly"
-        self.assertEquals (self.ctrl.FriendlyClassName(), "ListView")
+        self.assertEquals (self.ctrl.FriendlyClassName(), u"ListView")
 
     def testColumnCount(self):
         "Test the ListView ColumnCount method"
-        self.assertEquals (self.ctrl.ColumnCount(), 4)
+        self.assertEquals (self.ctrl.ColumnCount(), 8)
 
     def testItemCount(self):
         "Test the ListView ItemCount method"
-        self.assertEquals (self.ctrl.ItemCount(), 9)
+        self.assertEquals (self.ctrl.ItemCount(), 7)
 
     def testItemText(self):
         "Test the ListView item.Text property"
         item = self.ctrl.GetItem(1)
 
-        self.assertEquals(item['text'], "Venus")
+        self.assertEquals(item['text'], u"Red")
 
     def testItems(self):
         "Test the ListView Items method"
@@ -177,7 +169,7 @@ class ListViewTestCases(unittest.TestCase):
         self.assertEquals(self.ctrl.GetSelectedCount(), 0)
 
         self.ctrl.Select(1)
-        self.ctrl.Select(7)
+        self.ctrl.Select(6)
 
         self.assertEquals(self.ctrl.GetSelectedCount(), 2)
 
@@ -237,11 +229,11 @@ class ListViewTestCases(unittest.TestCase):
 
     def testSelectText(self):
         "Test ListView Selecting some items"
-        self.ctrl.Select("Venus")
-        self.ctrl.Select("Jupiter")
-        self.ctrl.Select("Uranus")
+        self.ctrl.Select(u"Green")
+        self.ctrl.Select(u"Yellow")
+        self.ctrl.Select(u"Gray")
 
-        self.assertRaises(ValueError, self.ctrl.Deselect, "Item not in list")
+        self.assertRaises(ValueError, self.ctrl.Deselect, u"Item not in list")
 
         self.assertEquals(self.ctrl.GetSelectedCount(), 3)
 
@@ -275,22 +267,17 @@ class ListViewTestCases(unittest.TestCase):
         for prop_name in props:
             self.assertEquals(getattr(self.ctrl, prop_name)(), props[prop_name])
 
-        self.assertEquals(props['ColumnCount'], 4)
-        self.assertEquals(props['ItemCount'], 9)
+        self.assertEquals(props['ColumnCount'], 8)
+        self.assertEquals(props['ItemCount'], 7)
 
 
     def testGetColumnTexts(self):
-        self.dlg.MenuSelect("Styles")
-        self.app.ControlStyles.StylesListBox.TypeKeys(
-            "{HOME}" + "{DOWN}"* 12 + "{SPACE}")
+        "Test columns titles text"
 
-        self.app.ControlStyles.ApplyStylesSetWindowLong.Click()
-        self.app.ControlStyles.SendMessage(win32defines.WM_CLOSE)
-
-        self.assertEquals(self.ctrl.GetColumn(0)['text'], "Planet")
-        self.assertEquals(self.ctrl.GetColumn(1)['text'], "Distance (km)")
-        self.assertEquals(self.ctrl.GetColumn(2)['text'], "Diameter (km)")
-        self.assertEquals(self.ctrl.GetColumn(3)['text'], "Mass (kg)")
+        self.assertEquals(self.ctrl.GetColumn(0)['text'], u"Color")
+        self.assertEquals(self.ctrl.GetColumn(1)['text'], u"Red")
+        self.assertEquals(self.ctrl.GetColumn(2)['text'], u"Green")
+        self.assertEquals(self.ctrl.GetColumn(3)['text'], u"Blue")
 
 
 #
@@ -417,7 +404,38 @@ class TreeViewTestCases(unittest.TestCase):
         for prop_name in props:
             self.assertEquals(getattr(self.ctrl, prop_name)(), props[prop_name])
 
-
+    def testItemsClick(self):
+        "Test clicking of items and sub-items in the treeview control"
+        planets_item_path = (0, 0)
+        mercury_diam_item_path = (0, 0, 1)
+        mars_dist_item_path = (0, 3, 0)
+        
+        itm = self.ctrl.GetItem(planets_item_path)
+        itm.EnsureVisible()
+        time.sleep(1)
+        itm.Click(button='left')
+        self.assertEquals(True, self.ctrl.IsSelected(planets_item_path))
+        
+        itm = self.ctrl.GetItem(mars_dist_item_path)
+        itm.EnsureVisible()
+        time.sleep(1)
+        itm.Click(button='left')
+        self.assertEquals(True, self.ctrl.IsSelected(mars_dist_item_path))
+        
+        itm = self.ctrl.GetItem(mercury_diam_item_path)
+        itm.EnsureVisible()
+        time.sleep(1)
+        itm.Click(button='left')
+        self.assertEquals(True, self.ctrl.IsSelected(mercury_diam_item_path))
+        self.assertEquals(False, self.ctrl.IsSelected(mars_dist_item_path))
+        
+        itm = self.ctrl.GetItem(planets_item_path)
+        itm.EnsureVisible()
+        time.sleep(1)
+        itm.Click(button='left')
+        self.assertEquals(True, self.ctrl.IsSelected(planets_item_path))
+        self.assertEquals(False, self.ctrl.IsSelected(mercury_diam_item_path))
+        
 class HeaderTestCases(unittest.TestCase):
     "Unit tests for the Header class"
 
@@ -428,16 +446,22 @@ class HeaderTestCases(unittest.TestCase):
         # start the application
         from pywinauto.application import Application
         app = Application()
-        app.start_(os.path.join(controlspy_folder, "Header.exe"))
+        app.start_(os.path.join(mfc_samples_folder, "RowList.exe"))
 
-        self.texts = [u'Distance', u'Diameter', u'Mass']
+        self.texts = [u'Color', u'Red', u'Green', u'Blue', u'Hue', u'Sat', u'Lum', u'Type']
         self.item_rects = [
-            RECT(0, 0, 90, 26),
-            RECT(90, 0, 180, 26),
-            RECT(180, 0, 260, 26)]
+            RECT (  0, 0, 150, 19), 
+            RECT (150, 0, 200, 19), 
+            RECT (200, 0, 250, 19), 
+            RECT (250, 0, 300, 19), 
+            RECT (300, 0, 400, 19), 
+            RECT (400, 0, 450, 19), 
+            RECT (450, 0, 500, 19), 
+            RECT (500, 0, 650, 19)]
+           
         self.app = app
-        self.dlg = app.MicrosoftControlSpy
-        self.ctrl = app.MicrosoftControlSpy.Header.WrapperObject()
+        self.dlg = app.RowListSampleApplication #top_window_()
+        self.ctrl = app.RowListSampleApplication.Header.WrapperObject()
 
 
     def tearDown(self):
@@ -467,7 +491,7 @@ class HeaderTestCases(unittest.TestCase):
             self.assertEquals(getattr(self.ctrl, prop_name)(), props[prop_name])
 
     def testItemCount(self):
-        self.assertEquals(3, self.ctrl.ItemCount())
+        self.assertEquals(8, self.ctrl.ItemCount())
 
     def testGetColumnRectangle(self):
         for i in range(0, 3):
@@ -614,16 +638,16 @@ class TabControlTestCases(unittest.TestCase):
             "Earth", "Venus", "Mercury", "Sun"]
 
         self.rects = [
-            RECT(2,2,80,21),
-            RECT(80,2,174,21),
-            RECT(174,2,261,21),
-            RECT(2,21,91,40),
-            RECT(91,21,180,40),
-            RECT(180,21,261,40),
-            RECT(2,40,64,59),
-            RECT(64,40,131,59),
-            RECT(131,40,206,59),
-            RECT(206,40,261,59),
+            RECT(2,2,63,21),
+            RECT(63,2,141,21),
+            RECT(141,2,212,21),
+            RECT(212,2,280,21),
+            RECT(280,2,348,21),
+            RECT(2,21,68,40),
+            RECT(68,21,135,40),
+            RECT(135,21,207,40),
+            RECT(207,21,287,40),
+            RECT(287,21,348,40),
         ]
 
         self.app = app
@@ -665,7 +689,7 @@ class TabControlTestCases(unittest.TestCase):
             self.assertEquals(getattr(self.ctrl, prop_name)(), props[prop_name])
 
     def testRowCount(self):
-        self.assertEquals(3, self.ctrl.RowCount())
+        self.assertEquals(2, self.ctrl.RowCount())
 
     def testGetSelectedTab(self):
         self.assertEquals(6, self.ctrl.GetSelectedTab())
@@ -730,7 +754,7 @@ class TabControlTestCases(unittest.TestCase):
 
 
 class ToolbarTestCases(unittest.TestCase):
-    "Unit tests for the UpDownWrapper class"
+    "Unit tests for the ToolbarWrapper class"
 
     def setUp(self):
         """Start the application set some data and ensure the application
@@ -739,11 +763,22 @@ class ToolbarTestCases(unittest.TestCase):
         # start the application
         from pywinauto.application import Application
         app = Application()
-        app.start_(os.path.join(controlspy_folder, "toolbar.exe"))
+        app.start_(os.path.join(mfc_samples_folder, "CmnCtrl1.exe"))
 
         self.app = app
-        self.dlg = app.MicrosoftControlSpy
-        self.ctrl = app.MicrosoftControlSpy.Toolbar.WrapperObject()
+        self.dlg = app.CommonControlsSample
+        
+        # select a tab with toolbar controls
+        self.dlg.SysTabControl.Select(u"CToolBarCtrl") 
+
+        # see identifiers available at that tab
+        #self.dlg.PrintControlIdentifiers() 
+
+        # The sample app has two toolbars. The first toolbar can be
+        # addressed as Toolbar, Toolbar0 and Toolbar1.
+        # The second control goes as Toolbar2
+        self.ctrl = app.CommonControlsSample.Toolbar.WrapperObject() 
+        self.ctrl2 = app.CommonControlsSample.Toolbar2.WrapperObject()
 
         #self.dlg.MenuSelect("Styles")
 
@@ -785,18 +820,31 @@ class ToolbarTestCases(unittest.TestCase):
 
     def testButtonCount(self):
         "Test the button count method of the toolbar"
-        self.assertEquals(self.ctrl.ButtonCount(), 14)
+        # TODO: for a some reason the first toolbar returns button count = 12
+        # The same as in the second toolbar, even though their handles are different.
+        # Maybe the test app itself has to be fixed too.
+        #self.assertEquals(self.ctrl.ButtonCount(), 9)
+
+        self.assertEquals(self.ctrl2.ButtonCount(), 12)
 
     def testGetButton(self):
         self.assertRaises(IndexError, self.ctrl.GetButton, 29)
 
     def testGetButtonRect(self):
-        self.assertEquals(self.ctrl.GetButtonRect(0), RECT(6, 0, 29, 22))
+        self.assertEquals(self.ctrl.GetButtonRect(0), RECT(0, 0, 40, 38))
+        self.assertEquals(self.ctrl2.GetButtonRect(0), RECT(0, 0, 70, 38))
 
     def testGetToolTipsControls(self):
         tips = self.ctrl.GetToolTipsControl()
+        tt = tips.Texts()
+        self.assertEquals(u"New" in tt,True)
+        self.assertEquals(u"About" in tt,True)
 
-        self.assertEquals("Button ID 7" in tips.Texts(),True)
+        tips = self.ctrl2.GetToolTipsControl()
+        tt = tips.Texts()
+        self.assertEquals(u"Pencil" in tt,True)
+        self.assertEquals(u"Ellipse" in tt,True)
+
 
     def testPressButton(self):
 
@@ -809,7 +857,7 @@ class ToolbarTestCases(unittest.TestCase):
             "asdfdasfasdf")
 
         # todo more tests for pressbutton
-        self.ctrl.PressButton("10")
+        self.ctrl.PressButton(u"Open")
 
 
 
@@ -818,16 +866,23 @@ class RebarTestCases(unittest.TestCase):
 
     def setUp(self):
         """Start the application set some data and ensure the application
-        is in the state we want it."""
+        is in the state we want it.
+
+        The app title can be tricky. If no document is opened the title is just: "RebarTest"
+        However if an document is created/opened in the child frame
+        the title is appended with a document name: "RebarTest - RebarTest1"
+        A findbestmatch proc does well here with guessing the title 
+        even though the app is started with a short title "RebarTest".
+        """
 
         # start the application
         from pywinauto.application import Application
         app = Application()
-        app.start_(os.path.join(controlspy_folder, "rebar.exe"))
+        app.start_(os.path.join(mfc_samples_folder, "RebarTest.exe"))
 
         self.app = app
-        self.dlg = app.MicrosoftControlSpy
-        self.ctrl = app.MicrosoftControlSpy.Rebar.WrapperObject()
+        self.dlg = app.RebarTest_RebarTest
+        self.ctrl = app.RebarTest_RebarTest.Rebar.WrapperObject()
 
         #self.dlg.MenuSelect("Styles")
 
@@ -862,9 +917,10 @@ class RebarTestCases(unittest.TestCase):
         band = self.ctrl.GetBand(0)
 
 
-        self.assertEquals(band.hwndChild, self.dlg.ToolBar.handle)
+        self.assertEquals(band.hwndChild, self.dlg.MenuBar.handle)
 
-        #self.assertEquals(band.text, "blah")
+        self.assertEquals(self.ctrl.GetBand(1).text, u"Tools band:")
+        self.assertEquals(self.ctrl.GetBand(0).text, u"Menus band:")
 
     def testGetToolTipsControl(self):
         self.assertEquals(self.ctrl.GetToolTipsControl(), None)

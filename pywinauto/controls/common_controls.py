@@ -85,12 +85,14 @@ class ListViewWrapper(HwndWrapper.HwndWrapper):
             self.LVITEM         = win32structures.LVITEMW
             self.LVM_GETITEM    = win32defines.LVM_GETITEMW
             self.LVM_GETCOLUMN  = win32defines.LVM_GETCOLUMNW
+            self.text_decode    = lambda v: v
         else:
             self.create_buffer = ctypes.create_string_buffer
             self.LVCOLUMN       = win32structures.LVCOLUMNW
             self.LVITEM         = win32structures.LVITEMW
             self.LVM_GETCOLUMN  = win32defines.LVM_GETCOLUMNA
             self.LVM_GETITEM    = win32defines.LVM_GETITEMA            
+            self.text_decode    = lambda v: v.decode('utf-8')
 
     #-----------------------------------------------------------
     def ColumnCount(self):
@@ -152,11 +154,11 @@ class ListViewWrapper(HwndWrapper.HwndWrapper):
         if retval:
             col = remote_mem.Read(col)
 
-            text = self.create_buffer(1999)
+            text = self.create_buffer(2000)
             remote_mem.Read(text, col.pszText)
 
             col_props['order'] = col.iOrder
-            col_props['text'] = text.value
+            col_props['text'] = self.text_decode(text.value)
             col_props['format'] = col.fmt
             col_props['width'] = col.cx
             col_props['image'] = col.iImage
@@ -264,7 +266,7 @@ class ListViewWrapper(HwndWrapper.HwndWrapper):
         # Fill in the requested item
         retval = self.SendMessage(
             self.LVM_GETITEM,
-            item_index,
+            0, # MSDN: wParam for LVM_GETITEM must be zero
             remote_mem)
 
         # if it succeeded
@@ -277,7 +279,7 @@ class ListViewWrapper(HwndWrapper.HwndWrapper):
             remote_mem.Read(char_data, item.pszText)
 
             # and add it to the titles
-            item_data['text'] = char_data.value
+            item_data['text'] = self.text_decode(char_data.value)
             item_data['state'] = item.state
             item_data['image'] = item.iImage
             item_data['indent'] = item.iIndent
@@ -461,16 +463,16 @@ class ListViewWrapper(HwndWrapper.HwndWrapper):
         nmlv.uChanged = win32defines.LVIS_SELECTED
         nmlv.ptAction = win32structures.POINT()
 
-        new_remote_mem = RemoteMemoryBlock(self)
+        new_remote_mem = RemoteMemoryBlock(self, size=ctypes.sizeof(nmlv))
         new_remote_mem.Write(nmlv, size=ctypes.sizeof(nmlv))
 
         retval = self.Parent().SendMessage(
             win32defines.WM_NOTIFY,
             self.ControlID(),
             new_remote_mem)
-        if retval != win32defines.TRUE:
-            print('retval = ' + str(retval))
-            raise ctypes.WinError()
+        #if retval != win32defines.TRUE:
+        #    print('retval = ' + str(retval))
+        #    raise ctypes.WinError()
         del new_remote_mem
 
         win32functions.WaitGuiThreadIdle(self)
@@ -620,15 +622,71 @@ class _treeview_element(object):
             if not found:
                 raise Exception("Area ('%s') not found for this tree view item"% where)
 
-        self.tree_ctrl.ClickInput(
+        self.tree_ctrl.Click(
             button,
             coords = (point_to_click.x, point_to_click.y),
             double = double,
-            pressed = pressed)
+            pressed = pressed) #,
+            #absolute = True) # XXX: somehow it works for 64-bit explorer.exe on Win8.1, but it doesn't work for 32-bit ControlSpyV6.exe
 
         # if we use click instead of clickInput - then we need to tell the
         # treeview to update itself
         #self.tree_ctrl.
+
+    #----------------------------------------------------------------
+    def ClickInput(self, button = "left", double = False, wheel_dist = 0, where = "text", pressed = ""):
+        """Click on the treeview item
+
+        where can be any one of "text", "icon", "button", "check"
+        defaults to "text"
+        """
+
+        # find the text rectangle for the item,
+        point_to_click = self.Rectangle().mid_point()
+
+        if where.lower() != "text":
+            remote_mem = RemoteMemoryBlock(self.tree_ctrl)
+
+            point_to_click.x = self.Rectangle().left
+
+            found = False
+            while not found and point_to_click.x >= 0:
+
+                hittest = win32structures.TVHITTESTINFO()
+                hittest.pt = point_to_click
+                hittest.hItem = self.elem
+
+                remote_mem.Write(hittest)
+
+                self.tree_ctrl.SendMessage(win32defines.TVM_HITTEST, 0, remote_mem)
+                remote_mem.Read(hittest)
+
+                if where.lower() == 'button' and \
+                    hittest.flags == win32defines.TVHT_ONITEMBUTTON:
+                    found = True
+                    break
+
+                if where.lower() == 'icon' and \
+                    hittest.flags == win32defines.TVHT_ONITEMICON:
+                    found = True
+                    break
+
+                if where.lower() == 'check' and \
+                    hittest.flags == win32defines.TVHT_ONITEMSTATEICON:
+                    found = True
+                    break
+                    
+                point_to_click.x -= 1
+
+            if not found:
+                raise Exception("Area ('%s') not found for this tree view item"% where)
+
+        self.tree_ctrl.ClickInput(
+            button,
+            coords = (point_to_click.x, point_to_click.y),
+            double = double,
+            wheel_dist = wheel_dist,
+            pressed = pressed)
 
     #----------------------------------------------------------------
     def StartDragging(self, button='left', pressed=''):
@@ -1013,10 +1071,14 @@ class TreeViewWrapper(HwndWrapper.HwndWrapper):
     def Select(self, path):
         "Select the treeview item"
         elem = self.GetItem(path)
-        self.SendMessageTimeout(
+        result = ctypes.c_long()
+        win32functions.SendMessageTimeout(self,
             win32defines.TVM_SELECTITEM, # message
             win32defines.TVGN_CARET,     # how to select
-            elem)                 # item to select
+            elem.elem,                   # item to select
+            win32defines.SMTO_NORMAL,
+            int(Timings.after_treeviewselect_wait * 1000),
+            ctypes.byref(result))
 
         win32functions.WaitGuiThreadIdle(self)
         time.sleep(Timings.after_treeviewselect_wait)
@@ -1724,15 +1786,16 @@ class _toolbar_button(object):
         return self.State() & win32defines.TBSTATE_ENABLED
 
     #----------------------------------------------------------------
-    def Click(self):
-        "Left click on the Toolbar button"
-        self.toolbar_ctrl.Click(button='left', coords = self.Rectangle())
+    def Click(self, button = "left", pressed = ""):
+        "Click on the Toolbar button"
+        self.toolbar_ctrl.Click(button=button, coords = self.Rectangle(), pressed=pressed)
         time.sleep(Timings.after_toobarpressbutton_wait)
 
     #----------------------------------------------------------------
-    def ClickInput(self, double = False):
-        "Left click on the Toolbar button"
-        self.toolbar_ctrl.ClickInput(button='left', coords = self.Rectangle().mid_point(), double=double)
+    def ClickInput(self, button = "left", double = False, wheel_dist = 0, pressed = ""):
+        "Click on the Toolbar button"
+        self.toolbar_ctrl.ClickInput(button=button, coords = self.Rectangle().mid_point(),
+                                     double=double, wheel_dist=wheel_dist, pressed=pressed)
         time.sleep(Timings.after_toobarpressbutton_wait)
 
 #====================================================================
@@ -1985,27 +2048,10 @@ class ToolbarWrapper(HwndWrapper.HwndWrapper):
     def PressButton(self, button_identifier, exact = True):
         "Find where the button is and click it"
 
-        '''texts = self.Texts()
-        if isinstance(button_identifier, six.string_types):
-
-            # one of these will be returned for the matching
-            # text
-            indices = [i for i in range(0, len(texts[1:]))]
-
-            # find which index best matches that text
-            button_index = findbestmatch.find_best_match(
-                button_identifier, texts[1:], indices)
-            self.actions.log('Pressing toolbar button by text "' + str(button_identifier) + '" (found = "' + str(texts[1:][button_index]) + '")')
-
-        else:
-            button_index = button_identifier
-            self.actions.log('Pressing toolbar button number ' + str(button_index) + ' ("' + str(texts[1:][button_index]) + '")')
-
-        button_info = self.GetButton(button_index)'''
         msg = 'Clicking "' + self.WindowText() + '" toolbar button "' + str(button_identifier) + '"'
         self.actions.logSectionStart(msg)
         self.actions.log(msg)
-        button = self.Button(button_identifier, exact=exact) #button_info.idCommand) #button_index)
+        button = self.Button(button_identifier, exact=exact)
 
         # transliterated from
         # http://source.winehq.org/source/dlls/comctl32/toolbar.c
@@ -2015,8 +2061,6 @@ class ToolbarWrapper(HwndWrapper.HwndWrapper):
             button.ClickInput()
         else:
             raise RuntimeError('Toolbar button "' + str(button_identifier) + '" is disabled! Cannot click it.')
-            #self.actions.log('WARNING! Toolbar button is disabled!!! But trying to click it any way!')
-            #button.ClickInput()
         self.actions.logSectionEnd()
 
     #----------------------------------------------------------------
@@ -2161,7 +2205,7 @@ class ReBarWrapper(HwndWrapper.HwndWrapper):
 
         remote_mem = RemoteMemoryBlock(self)
 
-        band_info = win32structures.REBARBANDINFOW() #BandWrapper()
+        band_info = BandWrapper()
 
         band_info.cbSize = ctypes.sizeof(band_info)
         band_info.fMask = \
@@ -2176,8 +2220,9 @@ class ReBarWrapper(HwndWrapper.HwndWrapper):
             win32defines.RBBIM_TEXT
 
         # set the pointer for the text
-        band_info.pszText = ctypes.c_long(remote_mem.Address() + ctypes.sizeof(band_info))
-        band_info.cchText = 2000
+        band_info.lpText = win32structures.LPWSTR(
+            remote_mem.Address() + ctypes.sizeof(band_info))
+        band_info.cch = 2000
 
         # write the structure
         remote_mem.Write(band_info)
@@ -2192,7 +2237,7 @@ class ReBarWrapper(HwndWrapper.HwndWrapper):
         remote_mem.Read(band_info)
 
         # read the text
-        band_info.text = ctypes.create_unicode_buffer(1999)
+        band_info.text = ctypes.create_unicode_buffer(2000)
         remote_mem.Read(band_info.text, remote_mem.Address() + ctypes.sizeof(band_info))
 
         band_info.text = band_info.text.value
@@ -2336,7 +2381,7 @@ class UpDownWrapper(HwndWrapper.HwndWrapper):
     #----------------------------------------------------------------
     def GetValue(self):
         "Get the current value of the UpDown control"
-        pos = self.SendMessage(win32defines.UDM_GETPOS)
+        pos = win32functions.SendMessage(self, win32defines.UDM_GETPOS, win32structures.LPARAM(0), win32structures.WPARAM(0))
         return win32functions.LoWord(pos)
 
     #----------------------------------------------------------------
@@ -2365,11 +2410,18 @@ class UpDownWrapper(HwndWrapper.HwndWrapper):
     #----------------------------------------------------------------
     def SetValue(self, new_pos):
         "Set the value of the of the UpDown control to some integer value"
-        self.SendMessageTimeout(
-            win32defines.UDM_SETPOS, 0, win32functions.MakeLong(0, new_pos))
-
-        win32functions.WaitGuiThreadIdle(self)
-        time.sleep(Timings.after_updownchange_wait)
+        for _ in range(3):
+            result = ctypes.c_long()
+            win32functions.SendMessageTimeout(self,
+                win32defines.UDM_SETPOS, 0, win32functions.MakeLong(0, new_pos),
+                win32defines.SMTO_NORMAL,
+                int(Timings.after_updownchange_wait * 1000),
+                ctypes.byref(result))
+            win32functions.WaitGuiThreadIdle(self)
+            time.sleep(Timings.after_updownchange_wait)
+            if self.GetValue() == new_pos:
+                break
+            # make one more attempt elsewhere
 
     #----------------------------------------------------------------
     def Increment(self):

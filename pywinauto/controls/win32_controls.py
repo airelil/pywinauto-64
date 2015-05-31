@@ -24,11 +24,11 @@ from __future__ import unicode_literals
 
 __revision__ = "$Revision$"
 
-import sys
 import time
 
 import ctypes
 import win32gui
+import locale
 
 from . import HwndWrapper
 
@@ -42,15 +42,6 @@ from ..RemoteMemoryBlock import RemoteMemoryBlock
 
 from .. import tests
 from ..timings import Timings
-
-
-# portability helpers
-if six.PY3:
-    create_buf = lambda l: ctypes.create_unicode_buffer(l)
-    enc_buf = lambda t: t.value.encode(sys.stdout.encoding,'ignore').decode('utf-8','ignore')
-else:
-    create_buf = lambda l: ctypes.create_string_buffer(l)
-    enc_buf = lambda t: t.value.decode('utf-8','ignore')
 
 #====================================================================
 class ButtonWrapper(HwndWrapper.HwndWrapper):
@@ -234,11 +225,19 @@ def _get_multiple_text_items(wrapper, count_msg, item_len_msg, item_get_msg):
     # get the text for each item in the combobox
     for i in range(0, num_items):
         text_len = wrapper.SendMessage (item_len_msg, i, 0)
-        text = ctypes.create_unicode_buffer(text_len+1)
-        # XXX temporarily call SendMessage directly 
-        # as the base class method doesn't handle it well
-        win32functions.SendMessage(wrapper, item_get_msg, i, ctypes.byref(text))
-        texts.append(text.value.encode(sys.stdout.encoding,'ignore').decode('utf-8','ignore'))
+
+        if six.PY3:
+            text = ctypes.create_unicode_buffer(text_len + 1)
+        else:
+            text = ctypes.create_string_buffer(text_len + 1)
+
+        wrapper.SendMessage(item_get_msg, i, ctypes.byref(text))
+
+        if six.PY3:
+            texts.append(text.value.replace('\u200e', ''))
+        else:
+            import locale
+            texts.append(text.value.decode(locale.getpreferredencoding(), 'ignore').replace('?', ''))
 
     return texts
 
@@ -638,14 +637,13 @@ class EditWrapper(HwndWrapper.HwndWrapper):
 
         text_len = self.LineLength(line_index)
         # create a buffer and set the length at the start of the buffer
-        text = create_buf(text_len+3)
+        text = ctypes.create_unicode_buffer(text_len+3)
         text[0] = six.unichr(text_len)
 
         # retrieve the line itself
-        self.SendMessage(
-            win32defines.EM_GETLINE, line_index, text) # ctypes.byref(text))
+        win32functions.SendMessage(self, win32defines.EM_GETLINE, line_index, ctypes.byref(text))
 
-        return enc_buf(text)
+        return text.value
 
     #-----------------------------------------------------------
     def Texts(self):
@@ -664,11 +662,9 @@ class EditWrapper(HwndWrapper.HwndWrapper):
 
         length = self.SendMessage(win32defines.WM_GETTEXTLENGTH)
 
-        text =  ctypes.create_unicode_buffer(length + 1)
+        text = ctypes.create_unicode_buffer(length + 1)
 
-        # XXX temporarily call SendMessage directly 
-        # as the base class method doesn't handle it well
-        win32functions.SendMessage(self,win32defines.WM_GETTEXT, length+1, ctypes.byref(text))
+        win32functions.SendMessage(self, win32defines.WM_GETTEXT, length + 1, ctypes.byref(text))
 
         return text.value
 
@@ -715,11 +711,42 @@ class EditWrapper(HwndWrapper.HwndWrapper):
         else:
             self.Select()
 
-        buffer = ctypes.create_unicode_buffer(text, size=len(text) + 1)
-        # XXX temporarily call SendMessage directly 
-        # as the base class method doesn't handle it well
-        win32functions.SendMessage(self, win32defines.EM_REPLACESEL, True, ctypes.byref(buffer))
-        #self.actions.log(u'Set text to the edit box: ' + enc_buf(buffer))
+        # replace the selection with
+        #buffer = ctypes.c_wchar_p(six.text_type(text))
+        
+        if isinstance(text, six.text_type):
+            if six.PY3:
+                buffer = ctypes.create_unicode_buffer(text, size=len(text) + 1)
+            else:
+                buffer = ctypes.create_string_buffer(text.encode(locale.getpreferredencoding(), 'ignore'), size=len(text) + 1)
+        else:
+            if six.PY3:
+                buffer = ctypes.create_unicode_buffer(text.decode(locale.getpreferredencoding()), size=len(text) + 1)
+            else:
+                buffer = ctypes.create_string_buffer(text, size=len(text) + 1)
+        #buffer = ctypes.create_unicode_buffer(text, size=len(text) + 1)
+        '''
+        remote_mem = RemoteMemoryBlock(self)
+        _setTextExStruct = win32structures.SETTEXTEX()
+        _setTextExStruct.flags = win32defines.ST_SELECTION #| win32defines.ST_UNICODE
+        _setTextExStruct.codepage = win32defines.CP_WINUNICODE
+        
+        remote_mem.Write(_setTextExStruct)
+        
+        self.SendMessage(win32defines.EM_SETTEXTEX, remote_mem, ctypes.byref(buffer))
+        '''
+        self.SendMessage(win32defines.EM_REPLACESEL, True, ctypes.byref(buffer))
+
+        #win32functions.WaitGuiThreadIdle(self)
+        #time.sleep(Timings.after_editsetedittext_wait)
+
+        if isinstance(text, six.text_type):
+            if six.PY3:
+                self.actions.log('Set text to the edit box: ' + text)
+            else:
+                self.actions.log('Set text to the edit box: ' + text.encode(locale.getpreferredencoding(), 'ignore'))
+        elif isinstance(text, six.binary_type):
+            self.actions.log(b'Set text to the edit box: ' + text)
 
         # return this control so that actions can be chained.
         return self
@@ -733,10 +760,17 @@ class EditWrapper(HwndWrapper.HwndWrapper):
         self.VerifyActionable()
 
         # if we have been asked to select a string
-        if isinstance(start, six.string_types):
+        if isinstance(start, six.text_type):
             string_to_select = start
             #
             start = self.TextBlock().index(string_to_select)
+
+            if end is None:
+                end = start + len(string_to_select)
+        elif isinstance(start, six.binary_type):
+            string_to_select = start
+            #
+            start = self.TextBlock().index(string_to_select.decode('utf-8'))
 
             if end is None:
                 end = start + len(string_to_select)
