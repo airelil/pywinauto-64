@@ -32,7 +32,7 @@ function run {
     $output = "transformed.xml"
     
     #nosetests  --all-modules --with-xunit pywinauto/unittests/testall.py
-    nosetests --exclude=testall --with-xunit --with-coverage --cover-html --cover-html-dir=Coverage_report --cover-package=pywinauto --verbosity=4 pywinauto\unittests
+    nosetests --exclude=testall --with-xunit --with-coverage --cover-html --cover-html-dir=Coverage_report --cover-package=pywinauto --verbosity=2 pywinauto\unittests\test_SendKeys.py
     $success = $?
     Write-Host "result code of nosetests:" $success
 
