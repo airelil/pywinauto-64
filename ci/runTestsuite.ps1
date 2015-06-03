@@ -27,12 +27,12 @@ function run {
     Write-Host $env:APPVEYOR_BUILD_FOLDER
 
     cd $env:APPVEYOR_BUILD_FOLDER
-    $stylesheet =  "transform_xunit_to_appveyor.xsl"
+    $stylesheet =  "./ci/transform_xunit_to_appveyor.xsl"
     $input = "nosetests.xml"
     $output = "transformed.xml"
     
-    #nosetests  --all-modules --with-xunit pywinauto/unittests/testall.py
-    nosetests --exclude=testall --with-xunit --with-coverage --cover-html --cover-html-dir=Coverage_report --cover-package=pywinauto --verbosity=2 pywinauto\unittests\test_SendKeys.py
+    #nosetests  --all-modules --with-xunit pywinauto/unittests
+    nosetests --exclude=testall --exclude=test_SendKeys --with-xunit --with-coverage --cover-html --cover-html-dir=Coverage_report --cover-package=pywinauto --verbosity=3 pywinauto\unittests
     $success = $?
     Write-Host "result code of nosetests:" $success
 
