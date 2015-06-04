@@ -58,7 +58,7 @@ Author: Martin Scherer <m.scherer@fu-berlin.de>
           <xsl:for-each select="/testsuite/testcase[@classname=$className]">
             <test>
               <xsl:attribute name="name">
-                <xsl:value-of select="@name" />
+                <xsl:value-of select="@classname" />
             </xsl:attribute>
               <xsl:attribute name="time">
                 <xsl:value-of select="@time" />
