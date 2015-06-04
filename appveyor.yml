@@ -49,7 +49,7 @@ build: false  # Not a C# project, build stuff at the test step instead.
 
 test_script:
   # Build the compiled extension and run the project tests
-  #- "nosetests  --with-xunit pywinauto\\unittests\\testall.py"
+  - "python pywinauto\\unittests\\testall.py"
   - "powershell ./ci/runTestsuite.ps1"
 
 
