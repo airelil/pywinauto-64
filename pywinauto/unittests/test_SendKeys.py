@@ -24,6 +24,9 @@ from __future__ import print_function
 """Module containing tests for SendKeys Module
 
 >>> from SendKeys import *
+>>> try: input = raw_input
+... except NameError: pass
+...
 >>> SendKeys("a\\r\\n")
 >>> val = input()
 >>> print val
@@ -39,6 +42,8 @@ u"\x01"
 __revision__ = "$Revision: 236 $"
 
 
+import threading
+import time
 import sys
 sys.path.append(".")
 from pywinauto.SendKeysCtypes import *
@@ -46,11 +51,27 @@ from pywinauto import six
 #from SendKeys import *
 import os
 import unittest
+import pywinauto.actionlogger
 from msvcrt import getch
+
 
 # Fix Python 2.x.
 if six.PY2:
     input = raw_input
+
+# a logger shortcut
+log = pywinauto.actionlogger.ActionLogger().log
+
+def watch_dog(stop_event):
+    log("watch_dog start")
+    for _ in range(0, 7):
+        if not stop_event.is_set():
+            time.sleep(1)
+        else:
+            log("watch_dog exit")
+            return
+    log("watch_dog, send ENTER")
+    SendKeys("{ENTER}", pause = .01)
 
 
 class SendKeysTests(unittest.TestCase):
@@ -59,11 +80,14 @@ class SendKeysTests(unittest.TestCase):
     def setUp(self):
         """Actualy does nothing!"""
         #sys.stdin.flush()
-        pass
+        self.stop_watch_dog = threading.Event()
+        self.watch_dog_thread = threading.Thread(target = watch_dog,
+                args = ((self.stop_watch_dog,)) )
+        self.watch_dog_thread.start()
 
     def tearDown(self):
-        "delete the file we have created"
-        pass
+        "release a watch-dog thread"
+        self.stop_watch_dog.set()
 
     def __run_NormalCharacters_with_options(self, **args):
         "Make sure that sending any character in range "
