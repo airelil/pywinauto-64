@@ -495,17 +495,22 @@ class HeaderTestCases(unittest.TestCase):
 
     def testGetColumnRectangle(self):
         for i in range(0, 3):
-            self.assertEquals(
-                self.item_rects[i],
-                self.ctrl.GetColumnRectangle(i))
+            self.assertEquals(self.item_rects[i].left, self.ctrl.GetColumnRectangle(i).left)
+            self.assertEquals(self.item_rects[i].right, self.ctrl.GetColumnRectangle(i).right)
+            self.assertEquals(self.item_rects[i].top, self.ctrl.GetColumnRectangle(i).top)
+            self.failIf(abs(self.item_rects[i].bottom - self.ctrl.GetColumnRectangle(i).bottom) > 2)
 
     def testClientRects(self):
         test_rects = self.item_rects
         test_rects.insert(0, self.ctrl.ClientRect())
 
-        self.assertEquals(
-            test_rects,
-            self.ctrl.ClientRects())
+        client_rects = self.ctrl.ClientRects()
+        self.assertEquals(len(test_rects), len(client_rects))
+        for i in range(len(test_rects)):
+            self.assertEquals(test_rects[i].left, client_rects[i].left)
+            self.assertEquals(test_rects[i].right, client_rects[i].right)
+            self.assertEquals(test_rects[i].top, client_rects[i].top)
+            self.failIf(abs(test_rects[i].bottom - client_rects[i].bottom) > 2) # may be equal to 17 or 19
 
     def testGetColumnText(self):
         for i in range(0, 3):
@@ -530,9 +535,9 @@ class StatusBarTestCases(unittest.TestCase):
 
         self.texts = ["Long text", "", "Status Bar"]
         self.part_rects = [
-            RECT(0, 2, 65, 20),
-            RECT(67, 2, 90, 20),
-            RECT(92, 2, 357, 20)]
+            RECT(0, 2, 65, 22),
+            RECT(67, 2, 90, 22),
+            RECT(92, 2, 261, 22)]
         self.app = app
         self.dlg = app.MicrosoftControlSpy
         self.ctrl = app.MicrosoftControlSpy.StatusBar.WrapperObject()
@@ -638,16 +643,16 @@ class TabControlTestCases(unittest.TestCase):
             "Earth", "Venus", "Mercury", "Sun"]
 
         self.rects = [
-            RECT(2,2,63,21),
-            RECT(63,2,141,21),
-            RECT(141,2,212,21),
-            RECT(212,2,280,21),
-            RECT(280,2,348,21),
-            RECT(2,21,68,40),
-            RECT(68,21,135,40),
-            RECT(135,21,207,40),
-            RECT(207,21,287,40),
-            RECT(287,21,348,40),
+            RECT(2,2,80,21),
+            RECT(80,2,174,21),
+            RECT(174,2,261,21),
+            RECT(2,21,91,40),
+            RECT(91,21,180,40),
+            RECT(180,21,261,40),
+            RECT(2,40,64,59),
+            RECT(64,40,131,59),
+            RECT(131,40,206,59),
+            RECT(206,40,261,59),
         ]
 
         self.app = app
@@ -689,7 +694,7 @@ class TabControlTestCases(unittest.TestCase):
             self.assertEquals(getattr(self.ctrl, prop_name)(), props[prop_name])
 
     def testRowCount(self):
-        self.assertEquals(2, self.ctrl.RowCount())
+        self.assertEquals(3, self.ctrl.RowCount())
 
     def testGetSelectedTab(self):
         self.assertEquals(6, self.ctrl.GetSelectedTab())
@@ -831,8 +836,21 @@ class ToolbarTestCases(unittest.TestCase):
         self.assertRaises(IndexError, self.ctrl.GetButton, 29)
 
     def testGetButtonRect(self):
-        self.assertEquals(self.ctrl.GetButtonRect(0), RECT(0, 0, 40, 38))
-        self.assertEquals(self.ctrl2.GetButtonRect(0), RECT(0, 0, 70, 38))
+        rect_ctrl = self.ctrl.GetButtonRect(0)
+        self.assertEquals((rect_ctrl.left, rect_ctrl.top), (0, 0))
+        self.failIf((rect_ctrl.right - rect_ctrl.left) > 40)
+        self.failIf((rect_ctrl.right - rect_ctrl.left) < 36)
+        self.failIf((rect_ctrl.bottom - rect_ctrl.top) > 38)
+        self.failIf((rect_ctrl.bottom - rect_ctrl.top) < 36)
+        #self.assertEquals(rect_ctrl, RECT(0, 0, 40, 38))
+        
+        rect_ctrl2 = self.ctrl2.GetButtonRect(0)
+        self.assertEquals((rect_ctrl2.left, rect_ctrl2.top), (0, 0))
+        self.failIf((rect_ctrl2.right - rect_ctrl2.left) > 70)
+        self.failIf((rect_ctrl2.right - rect_ctrl2.left) < 64)
+        self.failIf((rect_ctrl2.bottom - rect_ctrl2.top) > 38)
+        self.failIf((rect_ctrl2.bottom - rect_ctrl2.top) < 36)
+        #self.assertEquals(rect_ctrl2, RECT(0, 0, 70, 38))
 
     def testGetToolTipsControls(self):
         tips = self.ctrl.GetToolTipsControl()
@@ -933,23 +951,28 @@ class ToolTipsTestCases(unittest.TestCase):
         """Start the application set some data and ensure the application
         is in the state we want it."""
 
-        self.texts = [u'Tooltip Tool 0', u'Tooltip Tool 1', u'Tooltip Tool 2']
+        self.texts = [u'', u'New', u'Open', u'Save', u'Cut', u'Copy', u'Paste', u'Print', u'About', u'Help']
 
         # start the application
         from pywinauto.application import Application
         app = Application()
-        app.start_(os.path.join(controlspy_folder, "Tooltip.exe"))
+        app.start_(os.path.join(mfc_samples_folder, "CmnCtrl1.exe"))
+        #app.start_(os.path.join(controlspy_folder, "Tooltip.exe"))
 
         self.app = app
-        self.dlg = app.MicrosoftControlSpy
+        self.dlg = app.Common_Controls_Sample
+        
+        self.dlg.TabControl.Select(u'CToolBarCtrl')
 
+        '''
         tips = app.windows_(
             visible_only = False,
             enabled_only = False,
             top_level_only = False,
             class_name = "tooltips_class32")
+        '''
 
-        self.ctrl = WrapHandle(tips[1])
+        self.ctrl = self.dlg.Toolbar.GetToolTipsControl() #WrapHandle(tips[1])
         #self.ctrl = HwndWrapper(tips[1])
 
 
@@ -993,7 +1016,7 @@ class ToolTipsTestCases(unittest.TestCase):
         self.assertEquals(tip.text, self.texts[1])
 
     def testToolCount(self):
-        self.assertEquals(3, self.ctrl.ToolCount())
+        self.assertEquals(10, self.ctrl.ToolCount())
 
     def testGetTipText(self):
         self.assertEquals(self.texts[1], self.ctrl.GetTipText(1))
