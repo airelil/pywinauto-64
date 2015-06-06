@@ -276,7 +276,16 @@ class ApplicationTestCases(unittest.TestCase):
 
         self.assertEqual(app.UntitledNotepad.handle, app.top_window_().handle)
 
+        prevHdl = app.UntitledNotepad.handle
         app.UntitledNotepad.MenuSelect("File->Page Setup")
+        start = time.time()
+        for _ in range (0, 8): # wait for the Page dialog up to 10 sec
+            newHdl = app.top_window_().handle
+            print("testTopWindow, looking for top. Prev=%s new=%s Timestamp=%f" % 
+                    (prevHdl, newHdl, (time.time() - start)))
+            if prevHdl == newHdl:
+                time.sleep(1)
+        print("testTopWindow, wait for the Page dialog = %f" % (time.time() - start))
 
         self.assertEqual(app.PageSetup.handle, app.top_window_().handle)
 
