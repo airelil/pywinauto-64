@@ -279,13 +279,17 @@ class ApplicationTestCases(unittest.TestCase):
         prevHdl = app.UntitledNotepad.handle
         app.UntitledNotepad.MenuSelect("File->Page Setup")
         start = time.time()
-        for _ in range (0, 8): # wait for the Page dialog up to 10 sec
+        for _ in range (0, 2): # wait for the Page dialog up to 10 sec
+            print("testTopWindow, looking for top start.Timestamp=%f" % 
+                    ( (time.time() - start)))
             newHdl = app.top_window_().handle
-            print("testTopWindow, looking for top. Prev=%s new=%s Timestamp=%f" % 
+            print("testTopWindow, looking for top end. Prev=%s new=%s Timestamp=%f" % 
                     (prevHdl, newHdl, (time.time() - start)))
             if prevHdl == newHdl:
                 time.sleep(1)
         print("testTopWindow, wait for the Page dialog = %f" % (time.time() - start))
+        from PIL import ImageGrab
+        ImageGrab.grab().save("testTopWindow.jpg","JPEG")
 
         self.assertEqual(app.PageSetup.handle, app.top_window_().handle)
 
