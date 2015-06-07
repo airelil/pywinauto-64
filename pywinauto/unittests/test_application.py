@@ -553,7 +553,9 @@ class WindowSpecificationTestCases(unittest.TestCase):
 
         start = time.time()
         self.assertEqual(self.dlgspec.WrapperObject(), self.dlgspec.Wait("  ready"))
-        self.assertEqual(True, 0 <= (time.time() - start) < 0 + allowable_error)
+        delta =  (time.time() - start)
+        print("testWait timing:", delta)
+        self.assertEqual(True, 0 <= delta < 0 + allowable_error)
 
         start = time.time()
         self.assertEqual(self.dlgspec.WrapperObject(), self.dlgspec.Wait(" exiSTS"))
