@@ -45,9 +45,9 @@ from pywinauto.sysinfo import is_x64_Python, is_x64_OS
 Timings.Fast()
 #application.set_timing(1, .01, 1, .01, .05, 0, 0, .1, 0, .01)
 
-# page setup dialog takes a long time to load
+# About dialog may take some time to load
 # so make sure that we wait for it.
-Timings.window_find_timeout = 10
+Timings.window_find_timeout = 4
 
 def _notepad_exe():
     if is_x64_Python() or not is_x64_OS():
@@ -276,24 +276,11 @@ class ApplicationTestCases(unittest.TestCase):
 
         self.assertEqual(app.UntitledNotepad.handle, app.top_window_().handle)
 
-        prevHdl = app.UntitledNotepad.handle
-        app.UntitledNotepad.MenuSelect("File->Page Setup")
-        start = time.time()
-        for _ in range (0, 2): # wait for the Page dialog up to 10 sec
-            print("testTopWindow, looking for top start.Timestamp=%f" % 
-                    ( (time.time() - start)))
-            newHdl = app.top_window_().handle
-            print("testTopWindow, looking for top end. Prev=%s new=%s Timestamp=%f" % 
-                    (prevHdl, newHdl, (time.time() - start)))
-            if prevHdl == newHdl:
-                time.sleep(1)
-        print("testTopWindow, wait for the Page dialog = %f" % (time.time() - start))
-        from PIL import ImageGrab
-        ImageGrab.grab().save("testTopWindow.jpg","JPEG")
+        app.UntitledNotepad.MenuSelect("Help->About Notepad")
 
-        self.assertEqual(app.PageSetup.handle, app.top_window_().handle)
+        self.assertEqual(app.AboutNotepad.handle, app.top_window_().handle)
 
-        app.PageSetup.Cancel.Click()
+        app.AboutNotepad.Ok.Click()
         app.UntitledNotepad.MenuSelect("File->Exit")
 
 
@@ -308,14 +295,14 @@ class ApplicationTestCases(unittest.TestCase):
         notepad_handle = app.UntitledNotepad.handle
         self.assertEquals(app.windows_(visible_only = True), [notepad_handle])
 
-        app.UntitledNotepad.MenuSelect("File->Page Setup")
+        app.UntitledNotepad.MenuSelect("Help->About Notepad")
 
-        pagesetup_handle = app.PageSetup.handle
+        aboutnotepad_handle = app.AboutNotepad.handle
         self.assertEquals(
             app.windows_(visible_only = True, enabled_only = False),
-            [pagesetup_handle, notepad_handle])
+            [aboutnotepad_handle, notepad_handle])
 
-        app.PageSetup.Cancel.Click()
+        app.AboutNotepad.Ok.Click()
         app.UntitledNotepad.MenuSelect("File->Exit")
 
     def testWindow(self):
@@ -363,13 +350,13 @@ class ApplicationTestCases(unittest.TestCase):
             app[u'Unt\xeftledNotepad'].handle,
             app.window_(title = "Untitled - Notepad").handle)
 
-        app.UntitledNotepad.MenuSelect("File->Page Setup")
+        app.UntitledNotepad.MenuSelect("Help->About Notepad")
 
         self.assertEqual(
-            app['PageSetup'].handle,
-            app.window_(title = "Page Setup").handle)
+            app['AboutNotepad'].handle,
+            app.window_(title = "About Notepad").handle)
 
-        app.PageSetup.Cancel.Click()
+        app.AboutNotepad.Ok.Click()
         app.UntitledNotepad.MenuSelect("File->Exit")
 
         #application.window_find_timeout = prev_timeout
@@ -389,7 +376,7 @@ class ApplicationTestCases(unittest.TestCase):
             app.UntitledNotepad.handle,
             app.window_(title = "Untitled - Notepad").handle)
 
-        app.UntitledNotepad.MenuSelect("File->Page Setup")
+        app.UntitledNotepad.MenuSelect("Help->About Notepad")
 
         # I think it's OK that this no longer raises a matcherror
         # just because the window is not enabled - doesn't mean you
@@ -398,10 +385,10 @@ class ApplicationTestCases(unittest.TestCase):
         #    app.Notepad.__getattr__, 'handle')
 
         self.assertEqual(
-            app.PageSetup.handle,
-            app.window_(title = "Page Setup").handle)
+            app.AboutNotepad.handle,
+            app.window_(title = "About Notepad").handle)
 
-        app.PageSetup.Cancel.Click()
+        app.AboutNotepad.Ok.Click()
         app.UntitledNotepad.MenuSelect("File->Exit")
 
         #application.window_find_timeout = prev_timeout
@@ -556,7 +543,7 @@ class WindowSpecificationTestCases(unittest.TestCase):
     def testWait(self):
         "test the functionality and timing of the wait method"
 
-        allowable_error = .02
+        allowable_error = .03
 
         start = time.time()
         self.assertEqual(self.dlgspec.WrapperObject(), self.dlgspec.Wait("enaBleD "))
