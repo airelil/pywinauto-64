@@ -438,7 +438,6 @@ class HwndWrapperTests(unittest.TestCase):
         # make sure the main calculator dialog is still open
         self.assertEquals(self.dlg.IsVisible(), True)
 
-
 class HwndWrapperMouseTests(unittest.TestCase):
     "Unit tests for mouse actions of the HwndWrapper class"
 
@@ -455,6 +454,9 @@ class HwndWrapperMouseTests(unittest.TestCase):
 
         # Get the old font
         self.app.UntitledNotepad.MenuSelect("Format->Font")
+
+        from PIL import ImageGrab
+        ImageGrab.grab().save("testTopWindow_%s.jpg"%(self.id()),"JPEG")
 
         self.old_font = self.app.Font.FontComboBox.SelectedIndex()
         self.old_font_style = self.app.Font.FontStyleCombo.SelectedIndex()
