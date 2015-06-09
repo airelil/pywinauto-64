@@ -38,7 +38,7 @@ sys.path.append(".")
 from pywinauto.application import Application
 from pywinauto.controls.HwndWrapper import HwndWrapper
 from pywinauto import win32structures, win32defines
-from pywinauto.findwindows import WindowNotFoundError
+from pywinauto.findwindows import WindowNotFoundError, find_windows
 from pywinauto.sysinfo import is_x64_Python, is_x64_OS
 
 
@@ -454,8 +454,13 @@ class HwndWrapperMouseTests(unittest.TestCase):
 
         # Get the old font
         self.app.UntitledNotepad.MenuSelect("Format->Font")
+        def wait_for_font_window():
+            if len(find_windows(title=u'Font')) == 0:
+                raise WindowNotFoundError
 
-        timings.WaitUntilPasses(10, 0.5, lambda: self.app.window_(title=u'Font'))
+        start = time.time()
+        timings.WaitUntilPasses(20, 0.5, wait_for_font_window)
+        print("HwndWrapperMouseTests.setUp: waited for Font window: %f" % (time.time()-start))
         from PIL import ImageGrab
         ImageGrab.grab().save("testTopWindow_%s.jpg"%(self.id()),"JPEG")
 
