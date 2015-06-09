@@ -455,6 +455,7 @@ class HwndWrapperMouseTests(unittest.TestCase):
         # Get the old font
         self.app.UntitledNotepad.MenuSelect("Format->Font")
 
+        timings.WaitUntilPasses(10, 0.5, lambda: self.app.window_(title=u'Font'))
         from PIL import ImageGrab
         ImageGrab.grab().save("testTopWindow_%s.jpg"%(self.id()),"JPEG")
 
