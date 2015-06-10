@@ -163,6 +163,7 @@ class HwndWrapperTests(unittest.TestCase):
 
     def testCloseClick_bug(self):
         self.dlg.MenuSelect('Help->About Calculator')
+        self.app.AboutCalculator.Wait("visible", 10)
         self.app.AboutCalculator.CloseButton.CloseClick()
         Timings.closeclick_dialog_close_wait = .5
         try:
@@ -422,6 +423,7 @@ class HwndWrapperTests(unittest.TestCase):
         self.dlg.MenuSelect('Help->About Calculator')
         
         # make sure it is open and visible
+        self.app.AboutCalculator.Wait("visible", 10)
         self.assertTrue(self.app.Window_(title='About Calculator').IsVisible(), True)
 
         # close it
@@ -454,15 +456,10 @@ class HwndWrapperMouseTests(unittest.TestCase):
 
         # Get the old font
         self.app.UntitledNotepad.MenuSelect("Format->Font")
-        def wait_for_font_window():
-            if len(find_windows(title=u'Font')) == 0:
-                raise WindowNotFoundError
 
         start = time.time()
-        timings.WaitUntilPasses(20, 0.5, wait_for_font_window)
+        self.app.Font.Wait("visible", 20)
         print("HwndWrapperMouseTests.setUp: waited for Font window: %f" % (time.time()-start))
-        from PIL import ImageGrab
-        ImageGrab.grab().save("testTopWindow_%s.jpg"%(self.id()),"JPEG")
 
         self.old_font = self.app.Font.FontComboBox.SelectedIndex()
         self.old_font_style = self.app.Font.FontStyleCombo.SelectedIndex()
@@ -503,11 +500,15 @@ class HwndWrapperMouseTests(unittest.TestCase):
 
 
     def testClick(self):
-        self.ctrl.Click(coords = (50, 10))
+        self.ctrl.Click(coords = (52, 10))
+        from PIL import ImageGrab
+        ImageGrab.grab().save("testTopWindow_%s.jpg"%(self.id()),"JPEG")
         self.assertEquals(self.dlg.Edit.SelectionIndices(), (6,6))
 
     def testClickInput(self):
         self.ctrl.ClickInput(coords = (50, 10))
+        from PIL import ImageGrab
+        ImageGrab.grab().save("testTopWindow_%s.jpg"%(self.id()),"JPEG")
         self.assertEquals(self.dlg.Edit.SelectionIndices(), (6,6))
 
     def testDoubleClick(self):
