@@ -38,7 +38,7 @@ sys.path.append(".")
 from pywinauto.application import Application
 from pywinauto.controls.HwndWrapper import HwndWrapper
 from pywinauto import win32structures, win32defines
-from pywinauto.findwindows import WindowNotFoundError, find_windows
+from pywinauto.findwindows import WindowNotFoundError
 from pywinauto.sysinfo import is_x64_Python, is_x64_OS
 
 
@@ -165,7 +165,7 @@ class HwndWrapperTests(unittest.TestCase):
         self.dlg.MenuSelect('Help->About Calculator')
         self.app.AboutCalculator.Wait("visible", 10)
         self.app.AboutCalculator.CloseButton.CloseClick()
-        Timings.closeclick_dialog_close_wait = .5
+        Timings.closeclick_dialog_close_wait = .7
         try:
             self.app.AboutCalculator.CloseClick()
         except timings.TimeoutError:
@@ -184,8 +184,12 @@ class HwndWrapperTests(unittest.TestCase):
         self.assertNotEqual(rect.bottom, None)
         self.assertNotEqual(rect.right, None)
 
-        self.failIf(abs(rect.height() - 323) > 2)
-        self.failIf(abs(rect.width() - 423) > 2)
+        if abs(rect.height() - 323) > 2:
+            if rect.height() != 310:
+                self.assertEqual(rect.height(), 323)
+        if abs(rect.width() - 423) > 2:
+            if rect.width() != 413:
+                self.assertEqual(rect.width(), 423)
 
     def testClientRect(self):
         rect = self.dlg.Rectangle()
@@ -440,6 +444,7 @@ class HwndWrapperTests(unittest.TestCase):
         # make sure the main calculator dialog is still open
         self.assertEquals(self.dlg.IsVisible(), True)
 
+
 class HwndWrapperMouseTests(unittest.TestCase):
     "Unit tests for mouse actions of the HwndWrapper class"
 
@@ -456,10 +461,7 @@ class HwndWrapperMouseTests(unittest.TestCase):
 
         # Get the old font
         self.app.UntitledNotepad.MenuSelect("Format->Font")
-
-        start = time.time()
         self.app.Font.Wait("visible", 20)
-        print("HwndWrapperMouseTests.setUp: waited for Font window: %f" % (time.time()-start))
 
         self.old_font = self.app.Font.FontComboBox.SelectedIndex()
         self.old_font_style = self.app.Font.FontStyleCombo.SelectedIndex()
@@ -501,14 +503,10 @@ class HwndWrapperMouseTests(unittest.TestCase):
 
     def testClick(self):
         self.ctrl.Click(coords = (52, 10))
-        from PIL import ImageGrab
-        ImageGrab.grab().save("testTopWindow_%s.jpg"%(self.id()),"JPEG")
         self.assertEquals(self.dlg.Edit.SelectionIndices(), (6,6))
 
     def testClickInput(self):
-        self.ctrl.ClickInput(coords = (50, 10))
-        from PIL import ImageGrab
-        ImageGrab.grab().save("testTopWindow_%s.jpg"%(self.id()),"JPEG")
+        self.ctrl.ClickInput(coords = (52, 10))
         self.assertEquals(self.dlg.Edit.SelectionIndices(), (6,6))
 
     def testDoubleClick(self):
@@ -569,7 +567,7 @@ class DragAndDropTests(unittest.TestCase):
     '''
 
     def testDragMouseInput(self):
-        "DragMouseInput works like a charm :)"
+        "test for DragMouseInput"
         birds = self.ctrl.GetItem(r'\Birds')
         dogs = self.ctrl.GetItem(r'\Dogs')
         self.ctrl.DragMouseInput("left", birds.Rectangle().mid_point(), dogs.Rectangle().mid_point())
