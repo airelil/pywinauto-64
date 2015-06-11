@@ -47,7 +47,7 @@ Timings.Fast()
 
 # About dialog may take some time to load
 # so make sure that we wait for it.
-Timings.window_find_timeout = 4
+Timings.window_find_timeout = 5
 
 def _notepad_exe():
     if is_x64_Python() or not is_x64_OS():
@@ -543,7 +543,7 @@ class WindowSpecificationTestCases(unittest.TestCase):
     def testWait(self):
         "test the functionality and timing of the wait method"
 
-        allowable_error = .9
+        allowable_error = .09
 
         start = time.time()
         self.assertEqual(self.dlgspec.WrapperObject(), self.dlgspec.Wait("enaBleD "))
@@ -553,39 +553,27 @@ class WindowSpecificationTestCases(unittest.TestCase):
 
         start = time.time()
         self.assertEqual(self.dlgspec.WrapperObject(), self.dlgspec.Wait("  ready"))
-        time_taken =  (time.time() - start)
-        print("testWait timing:", time_taken)
-        self.assertEqual(True, 0 <= time_taken < 0 + allowable_error)
+        self.assertEqual(True, 0 <= (time.time() - start) < 0 + allowable_error)
 
         start = time.time()
         self.assertEqual(self.dlgspec.WrapperObject(), self.dlgspec.Wait(" exiSTS"))
-        time_taken =  (time.time() - start)
-        print("testWait timing:", time_taken)
-        self.assertEqual(True, 0 <= time_taken < 0 + allowable_error)
+        self.assertEqual(True, 0 <= (time.time() - start) < 0 + allowable_error)
 
         start = time.time()
         self.assertEqual(self.dlgspec.WrapperObject(), self.dlgspec.Wait(" VISIBLE "))
-        time_taken =  (time.time() - start)
-        print("testWait timing:", time_taken)
-        self.assertEqual(True, 0 <= time_taken < 0 + allowable_error)
+        self.assertEqual(True, 0 <= (time.time() - start) < 0 + allowable_error)
 
         start = time.time()
         self.assertEqual(self.dlgspec.WrapperObject(), self.dlgspec.Wait(" ready enabled"))
-        time_taken =  (time.time() - start)
-        print("testWait timing:", time_taken)
-        self.assertEqual(True, 0 <= time_taken < 0 + allowable_error)
+        self.assertEqual(True, 0 <= (time.time() - start) < 0 + allowable_error)
 
         start = time.time()
         self.assertEqual(self.dlgspec.WrapperObject(), self.dlgspec.Wait("visible exists "))
-        time_taken =  (time.time() - start)
-        print("testWait timing:", time_taken)
-        self.assertEqual(True, 0 <= time_taken < 0 + allowable_error)
+        self.assertEqual(True, 0 <= (time.time() - start) < 0 + allowable_error)
 
         start = time.time()
         self.assertEqual(self.dlgspec.WrapperObject(), self.dlgspec.Wait("exists "))
-        time_taken =  (time.time() - start)
-        print("testWait timing:", time_taken)
-        self.assertEqual(True, 0 <= time_taken < 0 + allowable_error)
+        self.assertEqual(True, 0 <= (time.time() - start) < 0 + allowable_error)
 
 
 
@@ -594,7 +582,7 @@ class WindowSpecificationTestCases(unittest.TestCase):
 
         * raises and error when criteria not met
         * timing is close to the timeout value"""
-        allowable_error = .05
+        allowable_error = .11
 
         start = time.time()
         self.assertRaises(RuntimeError, self.dlgspec.WaitNot, "enaBleD ", .1, .05)

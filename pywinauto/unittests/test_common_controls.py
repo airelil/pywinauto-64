@@ -31,6 +31,7 @@ import time
 import pprint
 import pdb
 import os
+import win32api
 
 sys.path.append(".")
 from pywinauto import six
@@ -643,6 +644,7 @@ class TabControlTestCases(unittest.TestCase):
     def setUp(self):
         """Start the application set some data and ensure the application
         is in the state we want it."""
+        self.screen_w = win32api.GetSystemMetrics(0)
 
         # start the application
         from pywinauto.application import Application
@@ -928,6 +930,7 @@ class RebarTestCases(unittest.TestCase):
 
         self.app = app
         self.dlg = app.RebarTest_RebarTest
+        app.RebarTest_RebarTest.Rebar.Wait("visible", 10)
         self.ctrl = app.RebarTest_RebarTest.Rebar.WrapperObject()
 
         #self.dlg.MenuSelect("Styles")
@@ -1125,10 +1128,11 @@ class UpDownTestCases(unittest.TestCase):
     def testGetBase(self):
         "Test getting the base of the up-down control"
         self.assertEquals (self.ctrl.GetBase(), 10)
-        self.dlg.StatementEdit.SetEditText ("MSG (UDM_SETBASE, 16, 0)")
+        #self.dlg.StatementEdit.SetEditText ("MSG (UDM_SETBASE, 16, 0)")
 
         # use CloseClick to allow the control time to respond to the message
-        self.dlg.Send.Click()
+        #self.dlg.Send.ClickInput()
+        self.ctrl.SetBase(16)
 
         self.assertEquals (self.ctrl.GetBase(), 16)
 
