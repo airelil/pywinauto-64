@@ -460,6 +460,8 @@ class HwndWrapperMouseTests(unittest.TestCase):
             self.app.start_(r"C:\Windows\SysWOW64\notepad.exe")
 
         # Get the old font
+        time.sleep(10)
+        self.app.UntitledNotepad.Wait("visible", 20)
         self.app.UntitledNotepad.MenuSelect("Format->Font")
         self.app.Font.Wait("visible", 20)
 
@@ -477,6 +479,8 @@ class HwndWrapperMouseTests(unittest.TestCase):
 
     def tearDown(self):
         "Close the application after tests"
+        from PIL import ImageGrab
+        ImageGrab.grab().save("testTopWindow_%s.jpg"%(self.id()),"JPEG")        
 
         # Set the old font again
         self.app.UntitledNotepad.MenuSelect("Format->Font")
@@ -554,6 +558,8 @@ class DragAndDropTests(unittest.TestCase):
 
     def tearDown(self):
         "Close the application after tests"
+        from PIL import ImageGrab
+        ImageGrab.grab().save("testTopWindow_%s.jpg"%(self.id()),"JPEG")        
         self.app.kill_()
 
     '''
