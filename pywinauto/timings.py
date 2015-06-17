@@ -144,9 +144,9 @@ class TimeConfig(object):
         'after_listboxfocuschange_wait': 0,
         'after_editsetedittext_wait': 0,
         'after_editselect_wait': 0.01,
-        'drag_n_drop_move_mouse_wait': 0.4,
+        'drag_n_drop_move_mouse_wait': 0.1,
         'before_drop_wait': 0.3,
-        'after_drag_n_drop_wait': 1,
+        'after_drag_n_drop_wait': 0.1,
     }
 
 

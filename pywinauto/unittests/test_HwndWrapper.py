@@ -427,7 +427,7 @@ class HwndWrapperTests(unittest.TestCase):
         self.dlg.MenuSelect('Help->About Calculator')
         
         # make sure it is open and visible
-        self.app.AboutCalculator.Wait("visible", 10)
+        self.app.AboutCalculator.Wait("visible", 20)
         self.assertTrue(self.app.Window_(title='About Calculator').IsVisible(), True)
 
         # close it
@@ -460,10 +460,8 @@ class HwndWrapperMouseTests(unittest.TestCase):
             self.app.start_(r"C:\Windows\SysWOW64\notepad.exe")
 
         # Get the old font
-        time.sleep(10)
-        self.app.UntitledNotepad.Wait("visible", 20)
-        self.app.UntitledNotepad.MenuSelect("Format->Font")
-        self.app.Font.Wait("visible", 20)
+        self.app.UntitledNotepad.MenuSelect("Format->Font...")
+        self.app.Font.Wait("visible", 30)
 
         self.old_font = self.app.Font.FontComboBox.SelectedIndex()
         self.old_font_style = self.app.Font.FontStyleCombo.SelectedIndex()
@@ -479,8 +477,6 @@ class HwndWrapperMouseTests(unittest.TestCase):
 
     def tearDown(self):
         "Close the application after tests"
-        from PIL import ImageGrab
-        ImageGrab.grab().save("testTopWindow_%s.jpg"%(self.id()),"JPEG")        
 
         # Set the old font again
         self.app.UntitledNotepad.MenuSelect("Format->Font")
@@ -558,8 +554,6 @@ class DragAndDropTests(unittest.TestCase):
 
     def tearDown(self):
         "Close the application after tests"
-        from PIL import ImageGrab
-        ImageGrab.grab().save("testTopWindow_%s.jpg"%(self.id()),"JPEG")        
         self.app.kill_()
 
     '''
@@ -576,6 +570,8 @@ class DragAndDropTests(unittest.TestCase):
         "test for DragMouseInput"
         birds = self.ctrl.GetItem(r'\Birds')
         dogs = self.ctrl.GetItem(r'\Dogs')
+        birds.ClickInput()
+        time.sleep(5) # enough pause to prevent double click detection
         self.ctrl.DragMouseInput("left", birds.Rectangle().mid_point(), dogs.Rectangle().mid_point())
         dogs = self.ctrl.GetItem(r'\Dogs')
         self.assertEquals([child.Text() for child in dogs.Children()], [u'Birds', u'Dalmatian', u'German Shepherd', u'Great Dane'])

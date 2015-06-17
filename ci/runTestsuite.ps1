@@ -32,19 +32,18 @@ function run {
     $output = "transformed.xml"
     
     #nosetests  --all-modules --with-xunit pywinauto/unittests
-    nosetests --exclude=testall --exclude=test_SendKeys --with-xunit --with-coverage --cover-html --cover-html-dir=Coverage_report --cover-package=pywinauto --verbosity=3 pywinauto\unittests\test_HwndWrapper.py
+    nosetests --exclude=testall --exclude=test_SendKeys --with-xunit --with-coverage --cover-html --cover-html-dir=Coverage_report --cover-package=pywinauto --verbosity=3 pywinauto\unittests
     $success = $?
     Write-Host "result code of nosetests:" $success
-    copy testTopWindow_*.jpg Coverage_report\
 
     xslt_transform $input $stylesheet $output
 
     upload $output
     
     # return exit code of testsuite
-    #if ( -not $success) {
-    #    throw "testsuite not successful"
-    #}
+    if ( -not $success) {
+        throw "testsuite not successful"
+    }
 }
 
 run

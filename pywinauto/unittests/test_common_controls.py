@@ -930,7 +930,6 @@ class RebarTestCases(unittest.TestCase):
 
         self.app = app
         self.dlg = app.RebarTest_RebarTest
-        app.RebarTest_RebarTest.Rebar.Wait("visible", 10)
         self.ctrl = app.RebarTest_RebarTest.Rebar.WrapperObject()
 
         #self.dlg.MenuSelect("Styles")
