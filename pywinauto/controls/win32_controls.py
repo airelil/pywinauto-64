@@ -1,5 +1,7 @@
 # GUI Application automation and testing library
-# Copyright (C) 2006 Mark Mc Mahon
+# Copyright (C) 2015 Intel Corporation
+# Copyright (C) 2015 airelil
+# Copyright (C) 2009 Mark Mc Mahon
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -38,9 +40,7 @@ from .. import win32defines
 from .. import win32structures
 #from .. import findbestmatch
 from .. import controlproperties
-from ..RemoteMemoryBlock import RemoteMemoryBlock
 
-from .. import tests
 from ..timings import Timings
 
 #====================================================================
@@ -54,7 +54,8 @@ class ButtonWrapper(HwndWrapper.HwndWrapper):
         "TButton",
         "ThunderCommandButton",
         "ThunderOptionButton",
-        "ThunderCheckBox"]
+        "ThunderCheckBox",
+        "TCheckBox"]
     can_be_label = True
 
     #-----------------------------------------------------------
@@ -236,7 +237,6 @@ def _get_multiple_text_items(wrapper, count_msg, item_len_msg, item_get_msg):
         if six.PY3:
             texts.append(text.value.replace('\u200e', ''))
         else:
-            import locale
             texts.append(text.value.decode(locale.getpreferredencoding(), 'ignore').replace('?', ''))
 
     return texts
@@ -726,6 +726,7 @@ class EditWrapper(HwndWrapper.HwndWrapper):
                 buffer = ctypes.create_string_buffer(text, size=len(text) + 1)
         #buffer = ctypes.create_unicode_buffer(text, size=len(text) + 1)
         '''
+        from ..RemoteMemoryBlock import RemoteMemoryBlock
         remote_mem = RemoteMemoryBlock(self)
         _setTextExStruct = win32structures.SETTEXTEX()
         _setTextExStruct.flags = win32defines.ST_SELECTION #| win32defines.ST_UNICODE
@@ -843,6 +844,9 @@ class DialogWrapper(HwndWrapper.HwndWrapper):
     #-----------------------------------------------------------
     def RunTests(self, tests_to_run = None, ref_controls = None):
         "Run the tests on dialog"
+
+        # the tests package is imported only when running unittests
+        from .. import tests
 
         # get all the controls
         controls = [self] + self.Children()

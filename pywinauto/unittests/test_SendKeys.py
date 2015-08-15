@@ -1,6 +1,9 @@
 # -*- coding: latin-1 -*-
 # GUI Application automation and testing library
-# Copyright (C) 2006 Mark Mc Mahon
+# Copyright (C) 2015 Intel Corporation
+# Copyright (C) 2015 airelil
+# Copyright (C) 2012 Michael Herrmann
+# Copyright (C) 2010 Mark Mc Mahon
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -46,11 +49,13 @@ from pywinauto import six
 #from SendKeys import *
 import os
 import unittest
-from msvcrt import getch
+#from msvcrt import getch
 
 # Fix Python 2.x.
 if six.PY2:
-    input = raw_input
+    input_func = raw_input
+else:
+    input_func = input
 
 
 class SendKeysTests(unittest.TestCase):
@@ -68,7 +73,7 @@ class SendKeysTests(unittest.TestCase):
     def __run_NormalCharacters_with_options(self, **args):
         "Make sure that sending any character in range "
 
-        missed = []
+        #unused var: missed = []
         for i in range(32, 127):
 
             # skip characters that must be escaped
@@ -76,7 +81,7 @@ class SendKeysTests(unittest.TestCase):
                 continue
 
             SendKeys(chr(i) + "{ENTER}", pause = .001, **args)
-            received = input()
+            received = input_func()
 
             self.assertEquals(i, ord(received))
 
@@ -92,13 +97,13 @@ class SendKeysTests(unittest.TestCase):
     def testSpaceWithSpaces(self):
         "Make sure that with spaces option works"
         SendKeys(" \t \t {ENTER}", pause = .001, with_spaces = True)
-        received = input()
+        received = input_func()
         self.assertEquals("   ", received)
 
     def testSpaceWithoutSpaces(self):
         "Make sure that with spaces option works"
         SendKeys(" \t \t {ENTER}", pause = .001, with_spaces = False)
-        received = input()
+        received = input_func()
         self.assertEquals("", received)
 
 
@@ -114,20 +119,20 @@ class SendKeysTests(unittest.TestCase):
     def testTabWithTabs(self):
         "Make sure that with spaces option works"
         SendKeys("\t \t \t{ENTER}", pause = .1, with_tabs = True)
-        received = input()
+        received = input_func()
         self.assertEquals("\t\t\t", received)
 
     def testTabWithoutTabs(self):
         "Make sure that with spaces option works"
         SendKeys("\t a\t b\t{ENTER}", pause = .1, with_tabs = False)
-        received = input()
+        received = input_func()
         self.assertEquals("ab", received)
 
 
     def testTab(self):
         "Make sure that with spaces option works"
         SendKeys("{TAB}  {TAB} {ENTER}", pause = .3)
-        received = input()
+        received = input_func()
         self.assertEquals("\t\t", received)
 
 
@@ -144,19 +149,19 @@ class SendKeysTests(unittest.TestCase):
     def testNewlinesWithNewlines(self):
         "Make sure that with spaces option works"
         SendKeys("\t \t \t a~\tb\nc{ENTER}", pause = .1, with_newlines = True)
-        received = input()
+        received = input_func()
         self.assertEquals("a", received)
 
-        received = input()
+        received = input_func()
         self.assertEquals("b", received)
 
-        received = input()
+        received = input_func()
         self.assertEquals("c", received)
 
     def testNewlinesWithoutNewlines(self):
         "Make sure that with spaces option works"
         SendKeys("\t \t \t\na{ENTER}", pause = .01, with_newlines = False)
-        received = input()
+        received = input_func()
         self.assertEquals("a", received)
 
 
@@ -172,7 +177,7 @@ class SendKeysTests(unittest.TestCase):
             else:
                 c = char.decode('cp850')
             SendKeys(c + "{ENTER}", pause = .01)
-            received = input()
+            received = input_func()
 
             if str(char) == received:
                 matched += 1
@@ -185,7 +190,7 @@ class SendKeysTests(unittest.TestCase):
     def testCharsThatMustBeEscaped(self):
         "Make sure that escaping characters works"
         SendKeys("{%}{^}{+}{(}{)}{{}{}}{~}{ENTER}")
-        received = input()
+        received = input_func()
         self.assertEquals("%^+(){}~", received)
 
 

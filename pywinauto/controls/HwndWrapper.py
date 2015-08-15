@@ -1,5 +1,8 @@
 # GUI Application automation and testing library
-# Copyright (C) 2006 Mark Mc Mahon
+# Copyright (C) 2015 Intel Corporation
+# Copyright (C) 2015 airelil
+# Copyright (C) 2013 Michael Herrmann
+# Copyright (C) 2010 Mark Mc Mahon
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -27,7 +30,7 @@ __revision__ = "$Revision$"
 
 # pylint:  disable-msg=W0611
 
-import sys
+#import sys
 import time
 import re
 import ctypes
@@ -53,7 +56,6 @@ except ImportError:
 
 from .. import six
 from .. import win32defines
-from .. import win32functions
 from .. import win32structures
 from ..timings import Timings
 from .. import timings
@@ -586,11 +588,37 @@ class HwndWrapper(object): # six.with_metaclass(_MetaWrapper, object)
     #-----------------------------------------------------------
     def SendCommand(self, commandID):
         return self.SendMessage(win32defines.WM_COMMAND, commandID)
-        
+
+    #-----------------------------------------------------------
     def PostCommand(self, commandID):
         return self.PostMessage(win32defines.WM_COMMAND, commandID)
 
-        #-----------------------------------------------------------
+    #-----------------------------------------------------------
+    #def Notify(self, code):
+    #    "Send a notification to the parent (not tested yet)"
+
+    #    # now we need to notify the parent that the state has changed
+    #    nmhdr = win32structures.NMHDR()
+    #    nmhdr.hwndFrom = self.handle
+    #    nmhdr.idFrom = self.ControlID()
+    #    nmhdr.code = code
+
+    #    remote_mem = RemoteMemoryBlock(self, size=ctypes.sizeof(nmhdr))
+    #    remote_mem.Write(nmhdr, size=ctypes.sizeof(nmhdr))
+
+    #    retval = self.Parent().SendMessage(
+    #        win32defines.WM_NOTIFY,
+    #        self.handle,
+    #        remote_mem)
+    #    #if retval != win32defines.TRUE:
+    #    #    print('retval = ' + str(retval))
+    #    #    raise ctypes.WinError()
+    #    del remote_mem
+
+        return retval
+
+
+    #-----------------------------------------------------------
     def SendMessage(self, message, wparam = 0 , lparam = 0):
         "Send a message to the control and wait for it to return"
         #return win32functions.SendMessage(self, message, wparam, lparam)
@@ -891,22 +919,7 @@ class HwndWrapper(object): # six.with_metaclass(_MetaWrapper, object)
         """Close the window by pressing Alt+F4 keys."""
 
         time.sleep(Timings.before_closeclick_wait)
-
         self.TypeKeys('%{F4}')
-
-        def has_closed():
-            return not (
-                win32functions.IsWindow(self) or
-                win32functions.IsWindow(self.Parent()))
-
-        # Keep waiting until both this control and it's parent
-        # are no longer valid controls
-        timings.WaitUntil(
-            Timings.closeclick_dialog_close_wait,
-            Timings.closeclick_retry,
-            has_closed
-        )
-
         time.sleep(Timings.after_closeclick_wait)
 
         return self
@@ -1123,7 +1136,7 @@ class HwndWrapper(object): # six.with_metaclass(_MetaWrapper, object)
         if not dc:
             raise ctypes.WinError()
 
-        rect = self.Rectangle
+        rect = self.Rectangle()
 
         #ret = win32functions.TextOut(
         #    dc, rect.left, rect.top, six.text_type(text), len(text))
@@ -1256,7 +1269,7 @@ class HwndWrapper(object): # six.with_metaclass(_MetaWrapper, object)
 
     #-----------------------------------------------------------
     def MenuItem(self, path, exact = False):
-        """Return the menu item specifed by path
+        """Return the menu item specified by path
 
         Path can be a string in the form "MenuItem->MenuItem->MenuItem..."
         where each MenuItem is the text of an item at that level of the menu.
@@ -1322,7 +1335,7 @@ class HwndWrapper(object): # six.with_metaclass(_MetaWrapper, object)
 
     #-----------------------------------------------------------
     def MenuSelect(self, path, exact = False, ):
-        "Select the menuitem specifed in path"
+        "Select the menuitem specified in path"
 
         self.VerifyActionable()
 
@@ -1401,7 +1414,7 @@ class HwndWrapper(object): # six.with_metaclass(_MetaWrapper, object)
         # tell the window it must close
         self.PostMessage(win32defines.WM_CLOSE)
 
-        start = time.time()
+        #unused var: start = time.time()
         # Keeps trying while
         #    we have not timed out and
         #    window is still a valid handle and
@@ -1716,16 +1729,16 @@ def _perform_click_input(
         SendKeys.VirtualKeyAction(SendKeys.VK_SHIFT, up = False).Run()
 
 
-    inp_struct._.mi.dwFlags = 0
+    inp_struct.mi.dwFlags = 0
     for event in events:
-        inp_struct._.mi.dwFlags |= event
+        inp_struct.mi.dwFlags |= event
 
     dwData = 0
     if button.lower() == 'wheel':
         dwData = wheel_dist
-        inp_struct._.mi.mouseData = wheel_dist
+        inp_struct.mi.mouseData = wheel_dist
     else:
-        inp_struct._.mi.mouseData = 0
+        inp_struct.mi.mouseData = 0
 
     if button.lower() == 'move':
         #win32functions.SendInput(     # vvryabov: SendInput() should be called sequentially in a loop [for event in events]
@@ -1736,11 +1749,11 @@ def _perform_click_input(
         Y_res = win32functions.GetSystemMetrics(win32defines.SM_CYSCREEN)
         X_coord = int(float(coords[0]) * (65535. / float(X_res - 1)))
         Y_coord = int(float(coords[1]) * (65535. / float(Y_res - 1)))
-        win32api.mouse_event(inp_struct._.mi.dwFlags, X_coord, Y_coord, dwData)
+        win32api.mouse_event(inp_struct.mi.dwFlags, X_coord, Y_coord, dwData)
     else:
         for event in events:
-            inp_struct._.mi.dwFlags = event
-            win32api.mouse_event(inp_struct._.mi.dwFlags, coords[0], coords[1], dwData)
+            inp_struct.mi.dwFlags = event
+            win32api.mouse_event(inp_struct.mi.dwFlags, coords[0], coords[1], dwData)
             time.sleep(Timings.after_clickinput_wait)
 
     time.sleep(Timings.after_clickinput_wait)

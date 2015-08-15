@@ -1,5 +1,6 @@
 # GUI Application automation and testing library
-# Copyright (C) 2006 Mark Mc Mahon
+# Copyright (C) 2015 Intel Corporation
+# Copyright (C) 2010 Mark Mc Mahon
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -17,17 +18,15 @@
 #    59 Temple Place,
 #    Suite 330,
 #    Boston, MA 02111-1307 USA
-"Defines Windows(tm) functions"
+"""Defines Windows(tm) functions"""
 from __future__ import absolute_import
 
-__revision__ = "$Revision$"
-
 import ctypes
-from ctypes import *
+from ctypes import c_uint, c_short, c_long
 
 import sys
 if sys.platform == "cygwin":
-    windll = cdll
+    windll = ctypes.cdll
     HRESULT = c_long
 
 

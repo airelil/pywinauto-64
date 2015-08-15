@@ -1,4 +1,6 @@
 # GUI Application automation and testing library
+# Copyright (C) 2015 Intel Corporation
+# Copyright (C) 2015 airelil
 # Copyright (C) 2006 Mark Mc Mahon
 #
 # This library is free software; you can redistribute it and/or
@@ -23,7 +25,7 @@ from __future__ import absolute_import
 
 __revision__ = "$Revision$"
 
-from .win32defines import LF_FACESIZE, NMTTDISPINFOW_V1_SIZE, HDITEMW_V1_SIZE
+from .win32defines import LF_FACESIZE
 from . import six
 from . import sysinfo
 
@@ -80,7 +82,7 @@ class Structure(ctypes.Structure):
                         break
                 return are_equal
 
-            except:
+            except Exception:
                 return False
 
         return False
@@ -957,6 +959,7 @@ assert alignment(UNION_INPUT_STRUCTS) == 2, alignment(UNION_INPUT_STRUCTS)
 # C:/PROGRA~1/MICROS~4/VC98/Include/winuser.h 4310
 class INPUT(Structure):
     _pack_ = 2
+    _anonymous_ = ("_",)
     _fields_ = [
         # C:/PROGRA~1/MICROS~4/VC98/Include/winuser.h 4310
         ('type', DWORD),
@@ -1031,8 +1034,6 @@ else:
     assert alignment(MENUINFO) == 4, alignment(MENUINFO)
 
 
-
-NMTTDISPINFOW_V1_SIZE = 184 # Variable c_uint
 
 # C:/PROGRA~1/MICROS~4/VC98/Include/commctrl.h 2066
 class NMTTDISPINFOW(Structure):

@@ -1,5 +1,7 @@
 # GUI Application automation and testing library
-# Copyright (C) 2006 Mark Mc Mahon
+# Copyright (C) 2015 Intel Corporation
+# Copyright (C) 2015 airelil
+# Copyright (C) 2010 Mark Mc Mahon
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -25,20 +27,20 @@ from __future__ import print_function
 __revision__ = "$Revision: 234 $"
 
 import sys
-import ctypes
+#import ctypes
 import unittest
 import time
-import pprint
-import pdb
+#import pprint
+#import pdb
 import os
 import win32api
 
 sys.path.append(".")
 from pywinauto import six
-from pywinauto.controls import common_controls
+#from pywinauto.controls import common_controls
 from pywinauto.controls.common_controls import *
 from pywinauto.win32structures import RECT
-from pywinauto.controls import WrapHandle
+#from pywinauto.controls import WrapHandle
 #from pywinauto.controls.HwndWrapper import HwndWrapper
 from pywinauto import findbestmatch
 from pywinauto.sysinfo import is_x64_Python
@@ -56,9 +58,6 @@ if is_x64_Python():
 
 
 class RemoteMemoryBlockTestCases(unittest.TestCase):
-    def test__init__fail(self):
-        self.assertRaises(AccessDenied, RemoteMemoryBlock, 0)
-
     def test__init__fail(self):
         self.assertRaises(AccessDenied, RemoteMemoryBlock, 0)
 
@@ -203,7 +202,6 @@ class ListViewTestCases(unittest.TestCase):
         "Test checking the focus of some ListView items"
 
         print("Select something quick!!")
-        import time
         time.sleep(3)
         #self.ctrl.Select(1)
 
@@ -265,7 +263,7 @@ class ListViewTestCases(unittest.TestCase):
         self.assertEquals(
             self.ctrl.Texts(), props['Texts'])
 
-        for prop_name in props:
+        for prop_name in props.keys():
             self.assertEquals(getattr(self.ctrl, prop_name)(), props[prop_name])
 
         self.assertEquals(props['ColumnCount'], 8)
@@ -280,6 +278,72 @@ class ListViewTestCases(unittest.TestCase):
         self.assertEquals(self.ctrl.GetColumn(2)['text'], u"Green")
         self.assertEquals(self.ctrl.GetColumn(3)['text'], u"Blue")
 
+
+    def testItemRectangles(self):
+        "Test getting item rectangles"
+        
+        self.ctrl.GetItem('Green').Click(where='text')
+        self.assertEquals(self.ctrl.GetItem('Green').IsSelected(), True)
+        
+        self.ctrl.GetItem('Magenta').Click(where='icon')
+        self.assertEquals(self.ctrl.GetItem('Magenta').IsSelected(), True)
+        self.assertEquals(self.ctrl.GetItem('Green').IsSelected(), False)
+        
+        self.ctrl.GetItem('Green').Click(where='all')
+        self.assertEquals(self.ctrl.GetItem('Green').IsSelected(), True)
+        self.assertEquals(self.ctrl.GetItem('Magenta').IsSelected(), False)
+
+
+    def testItemCheck(self):
+        "Test checking/unchecking item"
+        if not self.dlg.Toolbar.Button(6).IsChecked():
+            self.dlg.Toolbar.Button(6).Click()
+        
+        yellow = self.ctrl.GetItem('Yellow')
+        yellow.Check()
+        self.assertEquals(yellow.IsChecked(), True)
+        
+        yellow.UnCheck()
+        self.assertEquals(yellow.IsChecked(), False)
+        self.assertEquals(self.ctrl.IsChecked('Yellow'), False) # TODO: deprecated method
+
+
+    def testItemClickInput(self):
+        "Test clicking item rectangles"
+        
+        self.ctrl.GetItem('Green').ClickInput(where='select')
+        self.assertEquals(self.ctrl.GetItem('Green').IsSelected(), True)
+        
+        self.ctrl.GetItem('Magenta').ClickInput(where='select')
+        self.assertEquals(self.ctrl.GetItem('Magenta').IsSelected(), True)
+        self.assertEquals(self.ctrl.GetItem('Green').IsSelected(), False)
+        self.assertEquals(self.ctrl.GetItem('Green').IsFocused(), False)
+        self.assertEquals(self.ctrl.GetItem('Green').State() & win32defines.LVIS_FOCUSED, 0)
+        
+        self.ctrl.GetItem('Green').ClickInput(where='select')
+        self.assertEquals(self.ctrl.GetItem('Green').IsSelected(), True)
+        self.assertEquals(self.ctrl.IsSelected('Green'), True) # TODO: deprecated method
+        self.assertEquals(self.ctrl.GetItem('Green').IsFocused(), True)
+        self.assertEquals(self.ctrl.IsFocused('Green'), True) # TODO: deprecated method
+        self.assertEquals(self.ctrl.GetItem('Magenta').IsSelected(), False)
+
+    def testItemMethods(self):
+        "Test short item methods like Text(), State() etc"
+        self.assertEquals(self.ctrl.GetItem('Green').Text(), 'Green')
+        self.assertEquals(self.ctrl.GetItem('Green').Image(), 2)
+        self.assertEquals(self.ctrl.GetItem('Green').Indent(), 0)
+
+    def testEnsureVisible(self):
+        self.dlg.MoveWindow(width=300)
+        
+        # Gray is not selected by click because it's not visible
+        self.ctrl.GetItem('Gray').Click()
+        self.assertEquals(self.ctrl.GetItem('Gray').IsSelected(), False)
+        self.dlg.SetFocus() # just in case
+        
+        self.ctrl.GetItem('Gray').EnsureVisible()
+        self.ctrl.GetItem('Gray').Click()
+        self.assertEquals(self.ctrl.GetItem('Gray').IsSelected(), True)
 
 #
 #    def testSubItems(self):
@@ -447,7 +511,7 @@ class HeaderTestCases(unittest.TestCase):
         # start the application
         from pywinauto.application import Application
         app = Application()
-        app.start_(os.path.join(mfc_samples_folder, "RowList.exe"))
+        app.start_(os.path.join(mfc_samples_folder, "RowList.exe"), timeout=20)
 
         self.texts = [u'Color', u'Red', u'Green', u'Blue', u'Hue', u'Sat', u'Lum', u'Type']
         self.item_rects = [
@@ -812,7 +876,7 @@ class ToolbarTestCases(unittest.TestCase):
         # The sample app has two toolbars. The first toolbar can be
         # addressed as Toolbar, Toolbar0 and Toolbar1.
         # The second control goes as Toolbar2
-        self.ctrl = app.CommonControlsSample.Toolbar.WrapperObject() 
+        self.ctrl = app.CommonControlsSample.Toolbar.WrapperObject()
         self.ctrl2 = app.CommonControlsSample.Toolbar2.WrapperObject()
 
         #self.dlg.MenuSelect("Styles")
@@ -907,6 +971,25 @@ class ToolbarTestCases(unittest.TestCase):
         # todo more tests for pressbutton
         self.ctrl.PressButton(u"Open")
 
+    def testCheckButton(self):
+        self.ctrl2.CheckButton('Erase', True)
+        self.assertEquals(self.ctrl2.Button('Erase').IsChecked(), True)
+        
+        self.ctrl2.CheckButton('Pencil', True)
+        self.assertEquals(self.ctrl2.Button('Erase').IsChecked(), False)
+        
+        self.ctrl2.CheckButton('Erase', False)
+        self.assertEquals(self.ctrl2.Button('Erase').IsChecked(), False)
+        
+        # try to check separator
+        self.assertRaises(RuntimeError, self.ctrl.CheckButton, 3, True)
+
+    def testIsCheckable(self):
+        self.assertNotEqual(self.ctrl2.Button('Erase').IsCheckable(), 0)
+        self.assertEquals(self.ctrl.Button('New').IsCheckable(), 0)
+
+    def testIsPressable(self):
+        self.assertEquals(self.ctrl.Button('New').IsPressable(), 0)
 
 
 class RebarTestCases(unittest.TestCase):
@@ -930,6 +1013,7 @@ class RebarTestCases(unittest.TestCase):
 
         self.app = app
         self.dlg = app.RebarTest_RebarTest
+        self.dlg.Wait('ready', 20)
         self.ctrl = app.RebarTest_RebarTest.Rebar.WrapperObject()
 
         #self.dlg.MenuSelect("Styles")
@@ -1023,10 +1107,6 @@ class ToolTipsTestCases(unittest.TestCase):
         "Make sure the friendly class is set correctly"
         self.assertEquals (self.ctrl.FriendlyClassName(), "ToolTips")
 
-    def testTexts(self):
-        "Make sure the texts are set correctly"
-        self.assertEquals (self.ctrl.Texts()[1:], self.texts)
-
     def testGetProperties(self):
         "Test getting the properties for the tooltips control"
         props  = self.ctrl.GetProperties()
@@ -1052,6 +1132,7 @@ class ToolTipsTestCases(unittest.TestCase):
         self.assertEquals(self.texts[1], self.ctrl.GetTipText(1))
 
     def testTexts(self):
+        "Make sure the texts are set correctly"
         self.assertEquals(self.ctrl.Texts()[0], '')
         self.assertEquals(self.ctrl.Texts()[1:], self.texts)
 

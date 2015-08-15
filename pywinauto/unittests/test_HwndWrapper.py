@@ -1,6 +1,8 @@
 # encoding: utf-8
 # GUI Application automation and testing library
-# Copyright (C) 2006 Mark Mc Mahon
+# Copyright (C) 2015 Intel Corporation
+# Copyright (C) 2015 airelil
+# Copyright (C) 2010 Mark Mc Mahon
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -25,11 +27,11 @@ from __future__ import unicode_literals
 "Tests for HwndWrapper"
 
 import time
-import pprint
-import pdb
-import warnings
+#import pprint
+#import pdb
+#import warnings
 
-import ctypes
+#import ctypes
 import locale
 import re
 
@@ -40,6 +42,7 @@ from pywinauto.controls.HwndWrapper import HwndWrapper
 from pywinauto import win32structures, win32defines
 from pywinauto.findwindows import WindowNotFoundError
 from pywinauto.sysinfo import is_x64_Python, is_x64_OS
+from pywinauto.RemoteMemoryBlock import RemoteMemoryBlock
 
 
 __revision__ = "$Revision: 234 $"
@@ -61,6 +64,12 @@ mfc_samples_folder = os.path.join(
    os.path.dirname(__file__), r"..\..\apps\MFC_samples")
 if is_x64_Python():
     mfc_samples_folder = os.path.join(mfc_samples_folder, 'x64')
+
+def _notepad_exe():
+    if is_x64_Python() or not is_x64_OS():
+        return r"C:\Windows\System32\notepad.exe"
+    else:
+        return r"C:\Windows\SysWOW64\notepad.exe"
 
 
 class HwndWrapperTests(unittest.TestCase):
@@ -175,6 +184,13 @@ class HwndWrapperTests(unittest.TestCase):
 
         #self.assertEquals(self.app.StatisticsBox.Exists(), False)
 
+    def testCloseAltF4(self):
+        self.dlg.MenuSelect('Help->About Calculator')
+        AboutCalculator = self.app.Window_(title='About Calculator', class_name='#32770')
+        AboutWrapper = AboutCalculator.Wait("enabled")
+        AboutCalculator.CloseAltF4()
+        AboutCalculator.WaitNot('visible')
+        self.assertNotEqual(AboutWrapper.IsVisible(), True)
 
     def testRectangle(self):
         "Test getting the rectangle of the dialog"
@@ -267,7 +283,9 @@ class HwndWrapperTests(unittest.TestCase):
         self.assertEqual(0, vk)
 
         code = self.dlg.Degrees.SendMessage(win32defines.WM_GETDLGCODE)
-        self.assertEqual(0, vk)
+        # The expected return code is: "Button" = 0x2000 and "Radio" = 0x40
+        expected = 0x2000 + 0x40
+        self.assertEqual(expected, code)
 
 
     def testSendMessageTimeout(self):
@@ -276,7 +294,9 @@ class HwndWrapperTests(unittest.TestCase):
         self.assertEqual(0, vk)
 
         code = self.dlg.Degrees.SendMessageTimeout(win32defines.WM_GETDLGCODE)
-        self.assertEqual(0, vk)
+        # The expected return code is: "Button" = 0x2000 and "Radio" = 0x40
+        expected = 0x2000 + 0x40
+        self.assertEqual(expected, code)
 
     def testPostMessage(self):
         self.assertNotEquals(0, self.dlg.PostMessage(win32defines.WM_PAINT))
@@ -453,45 +473,19 @@ class HwndWrapperMouseTests(unittest.TestCase):
         is in the state we want it."""
 
         # start the application
-        self.app = Application()
-        if is_x64_Python() or not is_x64_OS():
-            self.app.start_(r"C:\Windows\System32\notepad.exe")
-        else:
-            self.app.start_(r"C:\Windows\SysWOW64\notepad.exe")
+        self.app = Application.start(os.path.join(mfc_samples_folder, u"CmnCtrl3.exe"))
 
-        # Get the old font
-        self.app.UntitledNotepad.MenuSelect("Format->Font...")
-        self.app.Font.Wait("visible", 30)
-
-        self.old_font = self.app.Font.FontComboBox.SelectedIndex()
-        self.old_font_style = self.app.Font.FontStyleCombo.SelectedIndex()
-
-        # ensure we have the correct settings for this test
-        self.app.Font.FontStyleCombo.Select(0)
-        self.app.Font.FontComboBox.Select("Lucida Console")
-        self.app.Font.OK.Click()
-
-        self.dlg = self.app.Window_(title='Untitled - Notepad', class_name='Notepad')
-        self.ctrl = HwndWrapper(self.dlg.Edit.handle)
-        self.dlg.edit.SetEditText("Here is some text\r\n and some more")
+        self.dlg = self.app.Common_Controls_Sample
+        self.dlg.TabControl.Select('CButton (Command Link)')
+        self.ctrl = HwndWrapper(self.dlg.NoteEdit.handle)
 
     def tearDown(self):
         "Close the application after tests"
 
-        # Set the old font again
-        self.app.UntitledNotepad.MenuSelect("Format->Font")
-        self.app.Font.FontComboBox.Select(self.old_font)
-        self.app.Font.FontStyleCombo.Select(self.old_font_style)
-        self.app.Font.OK.Click()
-        self.app.Font.WaitNot('visible')
-
         # close the application
         try:
             self.dlg.Close(0.5)
-            if self.app.Notepad["Do&n't Save"].Exists():
-                self.app.Notepad["Do&n't Save"].Click()
-                self.app.Notepad["Do&n't Save"].WaitNot('visible')
-        except: # timings.TimeoutError:
+        except Exception: # timings.TimeoutError:
             pass
         finally:
             self.app.kill_()
@@ -502,38 +496,108 @@ class HwndWrapperMouseTests(unittest.TestCase):
 
 
     def testClick(self):
-        self.ctrl.Click(coords = (52, 10))
-        self.assertEquals(self.dlg.Edit.SelectionIndices(), (6,6))
+        self.ctrl.Click(coords = (50, 5))
+        self.assertEquals(self.dlg.Edit.SelectionIndices(), (9,9))
 
     def testClickInput(self):
-        self.ctrl.ClickInput(coords = (52, 10))
-        self.assertEquals(self.dlg.Edit.SelectionIndices(), (6,6))
+        self.ctrl.ClickInput(coords = (50, 5))
+        self.assertEquals(self.dlg.Edit.SelectionIndices(), (9,9))
 
     def testDoubleClick(self):
-        self.ctrl.DoubleClick(coords = (60, 30))
-        self.assertEquals(self.dlg.Edit.SelectionIndices(), (24,29))
+        self.ctrl.DoubleClick(coords = (50, 5))
+        self.assertEquals(self.dlg.Edit.SelectionIndices(), (8,13))
 
     def testDoubleClickInput(self):
-        self.ctrl.DoubleClickInput(coords = (60, 30))
-        self.assertEquals(self.dlg.Edit.SelectionIndices(), (24,29))
+        self.ctrl.DoubleClickInput(coords = (80, 5))
+        self.assertEquals(self.dlg.Edit.SelectionIndices(), (13,18))
+
+#    def testRightClick(self):
+#        pass
+
+    def testRightClickInput(self):
+        self.dlg.Edit.TypeKeys('{HOME}')
+        self.dlg.Edit.Wait('enabled').RightClickInput()
+        self.app.PopupMenu.Wait('ready').Menu().GetMenuPath('Select All')[0].Click()
+        self.dlg.Edit.TypeKeys('{DEL}')
+        self.assertEquals(self.dlg.Edit.TextBlock(), '')
+
+    def testPressMoveRelease(self):
+        self.dlg.NoteEdit.PressMouse(coords=(0, 5))
+        self.dlg.NoteEdit.MoveMouse(coords=(65, 5))
+        self.dlg.NoteEdit.ReleaseMouse(coords=(65, 5))
+        self.assertEquals(self.dlg.Edit.SelectionIndices(), (0,12))
+
+    def testDragMouse(self):
+        self.dlg.NoteEdit.DragMouse(press_coords=(0, 5), release_coords=(65, 5))
+        self.assertEquals(self.dlg.Edit.SelectionIndices(), (0,12))
+        
+        # continue selection with pressed Shift key
+        self.dlg.NoteEdit.DragMouse(press_coords=(65, 5), release_coords=(90, 5), pressed='shift')
+        self.assertEquals(self.dlg.Edit.SelectionIndices(), (0,17))
+
+#    def testSetWindowText(self):
+#        pass
+#
+#    def testTypeKeys(self):
+#        pass
+#
+#    def testDebugMessage(self):
+#        pass
+#
+#    def testDrawOutline(self):
+#        pass
+#
+
+class NotepadRegressionTests(unittest.TestCase):
+    "Regression unit tests for Notepad"
+
+    def setUp(self):
+        """Start the application set some data and ensure the application
+        is in the state we want it."""
+
+        # start the application
+        self.app = Application()
+        self.app.start_(_notepad_exe())
+
+        self.dlg = self.app.Window_(title='Untitled - Notepad', class_name='Notepad')
+        self.ctrl = HwndWrapper(self.dlg.Edit.handle)
+        self.dlg.edit.SetEditText("Here is some text\r\n and some more")
+
+        self.app2 = Application.start(_notepad_exe())
+
+
+    def tearDown(self):
+        "Close the application after tests"
+
+        # close the application
+        try:
+            self.dlg.Close(0.5)
+            if self.app.Notepad["Do&n't Save"].Exists():
+                self.app.Notepad["Do&n't Save"].Click()
+                self.app.Notepad["Do&n't Save"].WaitNot('visible')
+        except Exception: # timings.TimeoutError:
+            pass
+        finally:
+            self.app.kill_()
+        self.app2.kill_()
 
     def testMenuSelectNotepad_bug(self):
         "In notepad - MenuSelect Edit->Paste did not work"
 
         text = b'Here are some unicode characters \xef\xfc\r\n'
-        app2 = Application.start("notepad")
-        app2.UntitledNotepad.Edit.SetEditText(text)
+        self.app2.UntitledNotepad.Edit.SetEditText(text)
 
-        app2.UntitledNotepad.MenuSelect("Edit->Select All")
-        app2.UntitledNotepad.MenuSelect("Edit->Copy")
+        Timings.after_menu_wait = .7
+        self.app2.UntitledNotepad.MenuSelect("Edit->Select All")
+        self.app2.UntitledNotepad.MenuSelect("Edit->Copy")
 
         self.dlg.MenuSelect("Edit->Select All")
         self.dlg.MenuSelect("Edit->Paste")
         self.dlg.MenuSelect("Edit->Paste")
         self.dlg.MenuSelect("Edit->Paste")
 
-        app2.UntitledNotepad.MenuSelect("File->Exit")
-        app2.Window_(title='Notepad', class_name='#32770')["Don't save"].Click()
+        self.app2.UntitledNotepad.MenuSelect("File->Exit")
+        self.app2.Window_(title='Notepad', class_name='#32770')["Don't save"].Click()
 
         self.assertEquals(self.dlg.Edit.TextBlock().encode(locale.getpreferredencoding()), text*3)
 
@@ -577,39 +641,6 @@ class DragAndDropTests(unittest.TestCase):
         self.assertEquals([child.Text() for child in dogs.Children()], [u'Birds', u'Dalmatian', u'German Shepherd', u'Great Dane'])
 
 
-#
-#    def testRightClick(self):
-#        pass
-#
-#    def testPressMouse(self):
-#        pass
-#
-#    def testReleaseMouse(self):
-#        pass
-#
-#    def testMoveMouse(self):
-#        pass
-#
-#    def testDragMouse(self):
-#        pass
-#
-#    def testSetWindowText(self):
-#        pass
-#
-#    def testTypeKeys(self):
-#        pass
-#
-#    def testDebugMessage(self):
-#        pass
-#
-#    def testDrawOutline(self):
-#        pass
-#
-
-
-
-
-
 class GetDialogPropsFromHandleTest(unittest.TestCase):
     "Unit tests for mouse actions of the HwndWrapper class"
 
@@ -642,39 +673,37 @@ class GetDialogPropsFromHandleTest(unittest.TestCase):
 
         props_from_dialog = GetDialogPropsFromHandle(self.dlg)
 
-        props_from_ctrl = GetDialogPropsFromHandle(self.ctrl)
+        #unused var: props_from_ctrl = GetDialogPropsFromHandle(self.ctrl)
 
         self.assertEquals(props_from_handle, props_from_dialog)
 
 
+class RemoteMemoryBlockTests(unittest.TestCase):
+    "Unit tests for RemoteMemoryBlock"
 
+    def setUp(self):
+        """Start the application set some data and ensure the application
+        is in the state we want it."""
 
-##====================================================================
-#def _unittests():
-#    "do some basic testing"
-#    from pywinauto.findwindows import find_windows
-#    import sys
-#
-#    if len(sys.argv) < 2:
-#        handle = win32functions.GetDesktopWindow()
-#    else:
-#        try:
-#            handle = int(eval(sys.argv[1]))
-#
-#        except ValueError:
-#
-#            handle = find_windows(
-#                title_re = "^" + sys.argv[1],
-#                class_name = "#32770",
-#                visible_only = False)
-#
-#            if not handle:
-#                print "dialog not found"
-#                sys.exit()
-#
-#    props = GetDialogPropsFromHandle(handle)
-#    print len(props)
-#    #pprint(GetDialogPropsFromHandle(handle))
+        # start the application
+        self.app = Application()
+        self.app.start_(os.path.join(mfc_samples_folder, u"CmnCtrl1.exe"))
+
+        self.dlg = self.app.Common_Controls_Sample
+        self.ctrl = self.dlg.TreeView.WrapperObject()
+
+    def tearDown(self):
+        "Close the application after tests"
+        self.app.kill_()
+
+    def testGuardSignatureCorruption(self):
+        mem = RemoteMemoryBlock(self.ctrl, 16)
+        buf = ctypes.create_string_buffer(24)
+        
+        self.assertRaises(Exception, mem.Write, buf)
+        
+        mem.size = 24 # test hack
+        self.assertRaises(Exception, mem.Write, buf)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 # GUI Application automation and testing library
-# Copyright (C) 2006 Mark Mc Mahon
+# Copyright (C) 2015 Intel Corporation
+# Copyright (C) 2007 Mark Mc Mahon
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -18,17 +19,13 @@
 #    Suite 330,
 #    Boston, MA 02111-1307 USA
 
-"Tests for win32functions.py"
-
-__revision__ = "$Revision: 234 $"
+"""Tests for win32functions.py"""
 
 import unittest
 
 import sys
 sys.path.append(".")
 from pywinauto.win32functions import *
-
-import struct
 
 
 class Win32FunctionsTestCases(unittest.TestCase):

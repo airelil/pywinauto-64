@@ -1,5 +1,7 @@
 # GUI Application automation and testing library
-# Copyright (C) 2006 Mark Mc Mahon
+# Copyright (C) 2015 Intel Corporation
+# Copyright (C) 2015 airelil
+# Copyright (C) 2010 Mark Mc Mahon
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -30,8 +32,8 @@ import os
 import os.path
 import unittest
 import time
-import pprint
-import pdb
+#import pprint
+#import pdb
 import warnings
 
 import sys
@@ -56,6 +58,48 @@ def _notepad_exe():
         return r"C:\Windows\SysWOW64\notepad.exe"
 
 
+class ApplicationWarningTestCases(unittest.TestCase):
+    "Unit tests for warnings in the application.Application class"
+
+    def setUp(self):
+        """Set some data and ensure the application
+        is in the state we want it."""
+        mfc_samples_folder = os.path.join(os.path.dirname(__file__), r"..\..\apps\MFC_samples")
+        if is_x64_Python():
+            self.sample_exe = os.path.join(mfc_samples_folder, "CmnCtrl1.exe")
+        else:
+            self.sample_exe = os.path.join(mfc_samples_folder, 'x64', "CmnCtrl1.exe")
+
+    def testStartWarning3264(self):
+        if not is_x64_OS():
+            self.defaultTestResult()
+            return
+        
+        warnings.filterwarnings('always', category=UserWarning, append=True)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            app = Application.start(self.sample_exe)
+            app.kill_()
+            assert len(w) >= 1
+            assert issubclass(w[-1].category, UserWarning)
+            assert "64-bit" in str(w[-1].message)
+
+    def testConnectWarning3264(self):
+        if not is_x64_OS():
+            self.defaultTestResult()
+            return
+        
+        app = Application.start(self.sample_exe)
+        warnings.filterwarnings('always', category=UserWarning, append=True)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            app2 = Application.connect(path=self.sample_exe)
+            app.kill_()
+            assert len(w) >= 1
+            assert issubclass(w[-1].category, UserWarning)
+            assert "64-bit" in str(w[-1].message)
+
+
 class ApplicationTestCases(unittest.TestCase):
     "Unit tests for the application.Application class"
 
@@ -76,7 +120,6 @@ class ApplicationTestCases(unittest.TestCase):
         #self.dlg.SendMessage(win32defines.WM_CLOSE)
         warnings.showwarning = self.prev_warn
 
-
     def testNotConnected(self):
         "Verify that it raises when the app is not connected"
         #self.assertRaises (AppNotConnected, Application().__getattr__, 'Hiya')
@@ -88,7 +131,6 @@ class ApplicationTestCases(unittest.TestCase):
     def testStartProblem(self):
         "Verify start_ raises on unknown command"
         self.assertRaises (AppStartError, Application().start_, 'Hiya')
-
 
     def teststart_(self):
         "test start_() works correctly"
@@ -118,7 +160,6 @@ class ApplicationTestCases(unittest.TestCase):
 #
 #        app.UntitledNotepad.MenuSelect("File->Exit")
 
-
     def testStart_bug01(self):
         "On SourceForge forum AppStartError forgot to include %s for application name"
 
@@ -130,7 +171,6 @@ class ApplicationTestCases(unittest.TestCase):
             app.start_(app_name)
         except AppStartError as e:
             self.assertEquals(app_name in str(e), True)
-
 
 #    def testset_timing(self):
 #        "Test that set_timing sets the timing correctly"
@@ -164,8 +204,6 @@ class ApplicationTestCases(unittest.TestCase):
 #            ), (1, 2, 3, 4, 5, 6, 7, 8, 9, 10) )
 #
 #        set_timing(*prev_timing)
-
-
 
     def testConnect_path(self):
         "Test that connect_() works with a path"
@@ -224,12 +262,11 @@ class ApplicationTestCases(unittest.TestCase):
 
         app_conn.UntitledNotepad.MenuSelect('File->Exit')
 
-
     def testConnect_windowspec(self):
         "Test that connect_() works with a windowspec"
         app1 = Application()
         app1.start_(_notepad_exe())
-        handle = app1.UntitledNotepad.handle
+        #unused var: handle = app1.UntitledNotepad.handle
 
         app_conn = Application()
         try:
@@ -268,7 +305,6 @@ class ApplicationTestCases(unittest.TestCase):
             ProcessNotFoundError,
             Application().connect_, **{'path': "no app here"})
 
-
     def testTopWindow(self):
         "Test that top_window_() works correctly"
         app = Application()
@@ -282,7 +318,6 @@ class ApplicationTestCases(unittest.TestCase):
 
         app.AboutNotepad.Ok.Click()
         app.UntitledNotepad.MenuSelect("File->Exit")
-
 
     def testWindows(self):
         "Test that windows_() works correctly"
@@ -336,7 +371,7 @@ class ApplicationTestCases(unittest.TestCase):
 
         try:
             app['blahblah']
-        except:
+        except Exception:
             pass
 
 
@@ -393,7 +428,6 @@ class ApplicationTestCases(unittest.TestCase):
 
         #application.window_find_timeout = prev_timeout
 
-
     def testkill_(self):
         "test killing the application"
 
@@ -410,8 +444,6 @@ class ApplicationTestCases(unittest.TestCase):
         app.kill_()
 
         self.assertRaises(AttributeError, app.UntitledNotepad.Edit)
-
-
 
 
 class WindowSpecificationTestCases(unittest.TestCase):
@@ -527,11 +559,11 @@ class WindowSpecificationTestCases(unittest.TestCase):
         # try ones that should be found immediately
         start = time.time()
         self.assertEquals(True, self.dlgspec.Exists())
-        self.assertEquals(True, time.time() - start < .15)
+        self.assertEquals(True, time.time() - start < .3)
 
         start = time.time()
         self.assertEquals(True, self.ctrlspec.Exists())
-        self.assertEquals(True, time.time() - start < .15)
+        self.assertEquals(True, time.time() - start < .3)
 
         # try one that should not be found
         start = time.time()
@@ -543,7 +575,7 @@ class WindowSpecificationTestCases(unittest.TestCase):
     def testWait(self):
         "test the functionality and timing of the wait method"
 
-        allowable_error = .09
+        allowable_error = .3
 
         start = time.time()
         self.assertEqual(self.dlgspec.WrapperObject(), self.dlgspec.Wait("enaBleD "))
@@ -582,7 +614,7 @@ class WindowSpecificationTestCases(unittest.TestCase):
 
         * raises and error when criteria not met
         * timing is close to the timeout value"""
-        allowable_error = .11
+        allowable_error = .16
 
         start = time.time()
         self.assertRaises(RuntimeError, self.dlgspec.WaitNot, "enaBleD ", .1, .05)

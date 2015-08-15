@@ -1,5 +1,7 @@
 # GUI Application automation and testing library
-# Copyright (C) 2006 Mark Mc Mahon
+# Copyright (C) 2015 Intel Corporation
+# Copyright (C) 2015 airelil
+# Copyright (C) 2010 Mark Mc Mahon
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -123,9 +125,10 @@ class handlepropsTestCases(unittest.TestCase):
         self.assertEquals(True, isenabled(self.dlghandle))
         self.assertEquals(True, isenabled(self.edit_handle))
 
-        self.app.UntitledNotepad.MenuSelect("Format->Font")
+        self.app.UntitledNotepad.MenuSelect("Help->About Notepad")
+        self.app.AboutNotepad.Wait('ready')
         self.assertEquals(False, isenabled(self.dlghandle))
-        self.app.Font.Cancel.CloseClick()
+        self.app.AboutNotepad.OK.CloseClick()
 
         self.app.UntitledNotepad.MenuSelect("Edit->Replace")
         self.assertEquals(

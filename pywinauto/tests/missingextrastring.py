@@ -1,5 +1,5 @@
 # GUI Application automation and testing library
-# Copyright (C) 2006 Mark Mc Mahon
+# Copyright (C) 2007 Mark Mc Mahon
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -158,7 +158,7 @@ def _unittests():
         num_found = len(MissingExtraStringTest([ctrl]))
         try:
             assert num_found == num_bugs
-        except:
+        except Exception:
             #print num_found, num_bugs, loc, ref
             pass
 

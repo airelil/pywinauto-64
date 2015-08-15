@@ -1,5 +1,7 @@
 # GUI Application automation and testing library
-# Copyright (C) 2006 Mark Mc Mahon
+# Copyright (C) 2015 Intel Corporation
+# Copyright (C) 2015 airelil
+# Copyright (C) 2011 Mark Mc Mahon
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -62,21 +64,19 @@ import os.path
 import warnings
 import pickle
 
-import ctypes
 
-from . import six
-from . import win32structures
-from . import win32functions
+#from . import win32functions
 from . import win32defines
 from . import controls
 from . import findbestmatch
 from . import findwindows
 from . import handleprops
 
-import win32process, win32api, pywintypes, win32con, win32event
+import win32process, win32api, pywintypes, win32con, win32event, multiprocessing
 
 from .actionlogger import ActionLogger
 from .timings import Timings, WaitUntil, TimeoutError, WaitUntilPasses
+from .sysinfo import is_x64_Python
 
 
 class AppStartError(Exception):
@@ -446,7 +446,7 @@ class WindowSpecification(object):
             return True
 
         try:
-            wait_val = WaitUntil(timeout, retry_interval, WindowIsNotXXX)
+            WaitUntil(timeout, retry_interval, WindowIsNotXXX)
 #            if self.criteria[-1].has_key('best_match'):
 #                self.actions.log('Window "' + str(self.criteria[-1]['best_match']) + '" became not ' + str(wait_for_not))
 #            elif self.criteria[-1].has_key('title'):
@@ -703,7 +703,7 @@ def _resolve_from_appdata(
                     ctrl = controls.WrapHandle(ctrl_hwnds[0])
                 except IndexError:
                     print("-+-+=_" * 20)
-                    print(found_criteria)
+                    #print(found_criteria)
                     raise
 
                 break
@@ -785,7 +785,7 @@ def _resolve_control(criteria, timeout = None, retry_interval = None):
     * **retry_interval** - how long to wait between each retry (default .2)
     """
 
-    start = time.time()
+    #start = time.time()
 
     if timeout is None:
         timeout = Timings.window_find_timeout
@@ -860,6 +860,11 @@ class Application(object):
     def start_(self, cmd_line, timeout = None, retry_interval = None, create_new_console = False, wait_for_idle = True):
         "Starts the application giving in cmd_line"
 
+        # try to parse executable name and check it has correct bitness
+        if '.exe' in cmd_line:
+            exe_name = cmd_line.split('.exe')[0] + '.exe'
+            _warn_incorrect_binary_bitness(exe_name)
+
         if timeout is None:
             timeout = Timings.app_start_timeout
         if retry_interval is None:
@@ -895,6 +900,7 @@ class Application(object):
 
         self.process = dwProcessId
 
+        self.__warn_incorrect_bitness()
 
         def AppIdle():
             "Return true when the application is ready to start"
@@ -921,6 +927,20 @@ class Application(object):
         return self
 
     Start_ = start_
+
+    def __warn_incorrect_bitness(self):
+        if self.is64bit() != is_x64_Python():
+            if is_x64_Python():
+                warnings.simplefilter('always', UserWarning) # warn each time
+                warnings.warn(
+                    "32-bit application should be automated using 32-bit Python (you use 64-bit Python)",
+                    UserWarning)
+            else:
+                warnings.simplefilter('always', UserWarning) # warn each time
+                warnings.warn(
+                    "64-bit application should be automated using 64-bit Python (you use 32-bit Python)",
+                    UserWarning)
+
 
     def connect_(self, **kwargs):
         "Connects to an already running process"
@@ -955,9 +975,59 @@ class Application(object):
             raise RuntimeError(
                 "You must specify one of process, handle or path")
 
+        self.__warn_incorrect_bitness()
+
         return self
     Connect_ = connect_
 
+    def is64bit(self):
+        "Return True if running process is 64-bit"
+        if not self.process:
+            raise AppNotConnected("Please use start_ or connect_ before "
+                "trying anything else")
+        return handleprops.is64bitprocess(self.process)
+
+    def CPUUsage(self, interval = None):
+        "Return CPU usage percentage during specified number of seconds"
+        
+        WIN32_PROCESS_TIMES_TICKS_PER_SECOND = 1e7
+        
+        if interval is None:
+            interval = Timings.cpu_usage_interval
+        
+        if not self.process:
+            raise RuntimeError('Application instance is not connected to any process!')
+        hProcess = win32api.OpenProcess(win32con.MAXIMUM_ALLOWED, 0, self.process)
+        
+        times_dict = win32process.GetProcessTimes(hProcess)
+        UserTime_start, KernelTime_start = times_dict['UserTime'], times_dict['KernelTime']
+        
+        time.sleep(interval)
+        
+        times_dict = win32process.GetProcessTimes(hProcess)
+        UserTime_end, KernelTime_end = times_dict['UserTime'], times_dict['KernelTime']
+        
+        total_time = (UserTime_end - UserTime_start) / WIN32_PROCESS_TIMES_TICKS_PER_SECOND + \
+                     (KernelTime_end - KernelTime_start) / WIN32_PROCESS_TIMES_TICKS_PER_SECOND
+        
+        win32api.CloseHandle(hProcess)
+        return 100.0 * (total_time / (float(interval) * multiprocessing.cpu_count()))
+
+    def WaitCPUUsageLower(self, threshold = 2.5, timeout = None, usage_interval = None):
+        "Wait until process CPU usage percentage is less than specified threshold"
+        
+        if usage_interval is None:
+            usage_interval = Timings.cpu_usage_interval
+        if timeout is None:
+            timeout = Timings.cpu_usage_wait_timeout
+        
+        start_time = time.time()
+        
+        while self.CPUUsage(usage_interval) > threshold:
+            if time.time() - start_time > timeout:
+                raise RuntimeError('Waiting CPU load <= ' + str(threshold) + '% timed out!')
+        
+        return self
 
     def top_window_(self):
         "Return the current top window of the application"
@@ -1081,20 +1151,8 @@ class Application(object):
         """
 
         windows = self.windows_(visible_only = True)
-        #ok_to_kill = True
 
         for win in windows:
-
-            #t = threading.Thread(target = OKToClose, args = (win) )
-
-            #t.start()
-
-            #time.sleep(.2)
-            #win.Close()
-
-            #while t.isAlive() and not forcekill:
-            #    time.sleep(.5)
-
 
             win.SendMessageTimeout(
                 win32defines.WM_QUERYENDSESSION,
@@ -1107,21 +1165,10 @@ class Application(object):
                 win.Close()
             except TimeoutError:
                 pass
-            #print `ok_to_kill`, win.Texts()
-
-        #print `ok_to_kill`
-#        if ok_to_kill:
-#            for win in windows:
-#                print "\tclosing:", win.Texts()
-#                self.windows_()[0].Close()
-#        elif not forcekill:
-#            return False
 
         # window has let us know that it doesn't want to die - so we abort
         # this means that the app is not hung - but knows it doesn't want
         # to close yet - e.g. it is asking the user if they want to save
-        #if not forcekill:
-        #    return False
 
         #print "supposedly closed all windows!"
 
@@ -1133,7 +1180,7 @@ class Application(object):
                 win32defines.SYNCHRONIZE | win32defines.PROCESS_TERMINATE,
                 0,
                 self.process)
-        except pywintypes.error as exc:
+        except pywintypes.error:
             return True # already killed
 
         killed = True
@@ -1144,10 +1191,9 @@ class Application(object):
                 process_wait_handle,
                 int(Timings.after_windowclose_timeout * 1000))
 
-            #if forcekill:
             try:
                 win32api.TerminateProcess(process_wait_handle, 0)
-            except pywintypes.error as exc:
+            except pywintypes.error:
                 pass #print('Warning: ' + str(exc))
             #win32functions.TerminateProcess(process_wait_handle, 0)
             #else:
@@ -1159,33 +1205,15 @@ class Application(object):
 
     kill_ = Kill_
 
-#
-#
-#def OKToClose(window):
-#    return_val = bool(window.SendMessageTimeout(
-#        win32defines.WM_QUERYENDSESSION,
-#        timeout = 1000,
-#        timeoutflags = win32defines.SMTO_ABORTIFHUNG))# |
-#
-#    print "2343242343242"  * 100
-#
-#    return return_val
-
-
 
 
 #=========================================================================
 def AssertValidProcess(process_id):
     "Raise ProcessNotFound error if process_id is not a valid process id"
-    # Set instance variable _module if not already set
-    #process_handle = win32api.OpenProcess(win32con.PROCESS_DUP_HANDLE | win32con.PROCESS_QUERY_INFORMATION, 0, process_id) # read and query info
     try:
-        process_handle = win32api.OpenProcess(0x400 | 0x010, 0, process_id) # read and query info
+        process_handle = win32api.OpenProcess(win32con.MAXIMUM_ALLOWED, 0, process_id)
     except pywintypes.error as exc:
         raise ProcessNotFoundError(str(exc) + ', pid = ' + str(process_id))
-
-    #process_handle = win32functions.OpenProcess(
-    #    0x400 | 0x010, 0, process_id) # read and query info
 
     if not process_handle:
         message = "Process with ID '%d' could not be opened" % process_id
@@ -1194,95 +1222,73 @@ def AssertValidProcess(process_id):
     return process_handle
 
 #=========================================================================
-# Thanks to Yonggang Luo for pyWin32-independent implementation
-# https://code.google.com/r/luoyonggang-pywinauto/source/detail?r=6cb5b624db465720e19e7a3265bb7585bbc09452
-#
-def process_get_modules(name = None):
-    # set up the variable to pass to EnumProcesses
-    processes = (ctypes.c_int * 2000)()
-    bytes_returned = ctypes.c_int()
-
+def process_get_modules():
     modules = []
-    # collect all the running processes
     
+    # collect all the running processes
     pids = win32process.EnumProcesses()
     for pid in pids:
         if pid != 0: # skip system process (0x00000000)
             try:
                 modules.append((pid, process_module(pid)))
-            except pywintypes.error as exc:
-                pass #print(exc)
-            except ProcessNotFoundError as exc:
-                pass #print(exc)
+            except pywintypes.error:
+                pass
+            except ProcessNotFoundError:
+                pass
     return modules
-    '''
-    implementation without pyWin32 extensions
-    ctypes.windll.psapi.EnumProcesses(
-        ctypes.byref(processes),
-        ctypes.sizeof(processes),
-        ctypes.byref(bytes_returned))
 
-    # Get the process names
-    for i in range(0, int(bytes_returned.value / ctypes.sizeof(ctypes.c_int))):
-        try:
-            if processes[i]:
-                modules.append((processes[i], process_module(processes[i])))
-        except ProcessNotFoundError:
-            pass
-    '''
+#=========================================================================
+def _process_get_modules_wmi():
+    "Return the list of processes as tuples (pid, exe_path)"
+    from win32com.client import GetObject
+    _wmi = GetObject('winmgmts:')
+    
+    modules = []
+    # collect all the running processes
+    processes = _wmi.ExecQuery('Select * from win32_process')
+    for p in processes:
+        modules.append((p.ProcessId, p.ExecutablePath)) # p.Name
+    return modules
 
 #=========================================================================
 def process_module(process_id):
     "Return the string module name of this process"
     process_handle = AssertValidProcess(process_id)
 
-    # get module name from process handle
-    #filename = (ctypes.c_wchar * 2000)()
-    #win32functions.GetModuleFileNameEx(
-    #    process_handle, 0, ctypes.byref(filename), 2000)
+    return win32process.GetModuleFileNameEx(process_handle, 0)
 
-    filename = win32process.GetModuleFileNameEx(process_handle, 0)
-    #print('filename = ', filename)
-    # return the process value
-    return filename
+#=========================================================================
+def _warn_incorrect_binary_bitness(exe_name):
+    "warn if executable is of incorrect bitness"
+    if os.path.isabs(exe_name) and os.path.isfile(exe_name):
+        if handleprops.is64bitbinary(exe_name) and not is_x64_Python():
+            warnings.simplefilter('always', UserWarning) # warn for every 32-bit binary
+            warnings.warn(
+                "64-bit binary from 32-bit Python may work incorrectly (please use 64-bit Python instead)",
+                UserWarning, stacklevel=2)
 
 #=========================================================================
 def process_from_module(module):
     "Return the running process with path module"
 
-    modules = process_get_modules()
+    # normalize . or .. relative parts of absolute path
+    module_path = os.path.normpath(module)
+
+    _warn_incorrect_binary_bitness(module_path)
+    try:
+        modules = _process_get_modules_wmi()
+    except Exception:
+        modules = process_get_modules()
 
     # check for a module with a matching name in reverse order
     # as we are most likely to want to connect to the last
     # run instance
     modules.reverse()
     for process, name in modules:
-        if module.lower() in name.lower():
+        if name is None:
+            continue
+        if module_path.lower() in name.lower():
             return process
-
-#    # check if any of the running process has this module
-#    for i in range(0, bytes_returned.value / ctypes.sizeof(ctypes.c_int)):
-#        try:
-#            p_module = process_module(processes[i]).lower()
-#            if module.lower() in p_module:
-#                return processes[i]
-#
 
     message = "Could not find any process with a module of '%s'" % module
     raise ProcessNotFoundError(message)
-
-#
-#def WaitForDialog(dlg):
-#    waited = 0
-#    timeout = 10
-#    app = None
-#    while not app and waited <= timeout:
-#        try:
-#            app = Application.connect(best_match = dlg)
-#        except Exception as e:
-#            time.sleep(1)
-#            waited += 1
-#
-#    if app is None:
-#        raise RuntimeError("Window not found: '%s'"%dlg)
-#    return app, app[dlg]

@@ -1,5 +1,6 @@
 # GUI Application automation and testing library
-# Copyright (C) 2006 Mark Mc Mahon
+# Copyright (C) 2015 Intel Corporation
+# Copyright (C) 2010 Mark Mc Mahon
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -31,19 +32,22 @@ timings.Timings.Slow()
 
 The Following are the individual timing settings that can be adjusted:
 
-* window_find_timeout	(default 3)
+* window_find_timeout (default 5)
 * window_find_retry (default .09)
 
 * app_start_timeout (default 10)
 * app_start_retry   (default .90)
 
-* exists_timeout    (default .5)
-* exists_retry  (default .3)
+* cpu_usage_interval (default .5)
+* cpu_usage_wait_timeout (default 20)
+
+* exists_timeout  (default .5)
+* exists_retry   (default .3)
 
 * after_click_wait  (default .09)
 * after_clickinput_wait (default .01)
 
-* after_menu_wait   (default .05)
+* after_menu_wait   (default .1)
 
 * after_sendkeys_key_wait   (default .01)
 
@@ -94,11 +98,14 @@ __revision__ = "$Revision: 453 $"
 class TimeConfig(object):
     "Central storage and manipulation of timing values"
     __default_timing = {
-        'window_find_timeout' : 5,
+        'window_find_timeout' : 5.,
         'window_find_retry' : .09,
 
-        'app_start_timeout' : 10,
+        'app_start_timeout' : 10.,
         'app_start_retry' : .90,
+
+        'cpu_usage_interval' : .5,
+        'cpu_usage_wait_timeout' : 20.,
 
         'exists_timeout' : .5,
         'exists_retry' : .3,
@@ -106,7 +113,7 @@ class TimeConfig(object):
         'after_click_wait' : .09,
         'after_clickinput_wait' : .05,
 
-        'after_menu_wait' : .05,
+        'after_menu_wait' : .1,
 
         'after_sendkeys_key_wait' : .01,
 
