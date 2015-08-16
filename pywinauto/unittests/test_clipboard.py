@@ -116,7 +116,7 @@ def copytext(app):
 
 def pastetext(app):
     app.UntitledNotepad.Wait('enabled')
-    app.UntitledNotepad.MenuItem("Edit -> Paste").Click()
+    app.UntitledNotepad.MenuSelect("Edit -> Paste")
 
 if __name__ == "__main__":
     #_unittests()
