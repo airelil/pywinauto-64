@@ -60,6 +60,10 @@ def GetClipboardFormats():
 
     win32clipboard.CloseClipboard()
 
+    print("GetClipboardFormats:: num available_formats=%d"%(len(available_formats)))
+    for  af in available_formats:
+        print(af)
+
     return available_formats
 
 
@@ -81,12 +85,16 @@ def GetFormatName(format_id):
 #====================================================================
 def GetData(format_id = win32clipboard.CF_UNICODETEXT):
     "Return the data from the clipboard in the requested format"
+    print("GetData:: win32clipboard.CF_UNICODETEXT=%d" %(win32clipboard.CF_UNICODETEXT))
     if format_id not in GetClipboardFormats():
+        print("GetData:: format_id: %d" + format_id)
         raise RuntimeError("That format is not available")
 
     win32clipboard.OpenClipboard()
-    data = win32clipboard.GetClipboardData(format_id)
-    win32clipboard.CloseClipboard()
+    try:
+        data = win32clipboard.GetClipboardData(format_id)
+    finally:
+        win32clipboard.CloseClipboard()
 
     return data
 
