@@ -63,13 +63,13 @@ class ClipboardTestCases(unittest.TestCase):
 
 
     def testGetClipBoardFormats(self):
-        typetext(self.app1, u"here we are")
+        typetext(self.app1, "here we are")
         copytext(self.app1)
 
         self.assertEquals(GetClipboardFormats(), [13, 16, 1, 7])
 
     def testGetFormatName(self):
-        typetext(self.app1, u"here we are")
+        typetext(self.app1, "here we are")
         copytext(self.app1)
 
         self.assertEquals(
@@ -83,17 +83,17 @@ class ClipboardTestCases(unittest.TestCase):
         Where GetData was not closing the clipboard. FIXED.
         """
         self.app1.UntitledNotepad.MenuSelect("Edit->Select All Ctrl+A")
-        typetext(self.app1, u"some text")
+        typetext(self.app1, "some text")
         copytext(self.app1)
 
         # was not closing the clipboard!
         data = GetData()
-        self.assertEquals(data, u"some text")
+        self.assertEquals(data, "some text")
 
 
         self.assertEquals(gettext(self.app2), "")
         pastetext(self.app2)
-        self.assertEquals(gettext(self.app2), u"some text")
+        self.assertEquals(gettext(self.app2), "some text")
 
 
 
@@ -116,7 +116,7 @@ def copytext(app):
 
 def pastetext(app):
     app.UntitledNotepad.Wait('enabled')
-    app.UntitledNotepad.MenuSelect("Edit -> Paste")
+    app.UntitledNotepad.MenuItem("Edit -> Paste").Click()
 
 if __name__ == "__main__":
     #_unittests()
