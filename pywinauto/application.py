@@ -65,7 +65,7 @@ import warnings
 import pickle
 
 
-#from . import win32functions
+from . import win32functions
 from . import win32defines
 from . import controls
 from . import findbestmatch
@@ -78,6 +78,18 @@ from .actionlogger import ActionLogger
 from .timings import Timings, WaitUntil, TimeoutError, WaitUntilPasses
 from .sysinfo import is_x64_Python
 
+# Setup DPI awareness for the python process if any is supported
+#import pywinauto
+#pywinauto.actionlogger.enable()
+ActionLogger().log("Check DPI awareness")
+if win32functions.SetProcessDpiAwareness:
+    ActionLogger().log("Call SetProcessDpiAwareness")
+    win32functions.SetProcessDpiAwareness(
+            win32functions.Process_DPI_Awareness[
+                "Process_Per_Monitor_DPI_Aware"])
+elif win32functions.SetProcessDPIAware:
+    ActionLogger().log("Call SetProcessDPIAware")
+    win32functions.SetProcessDPIAware()
 
 class AppStartError(Exception):
     "There was a problem starting the Application"

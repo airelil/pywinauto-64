@@ -173,6 +173,36 @@ CountClipboardFormats  = ctypes.windll.user32.CountClipboardFormats
 EnumClipboardFormats   = ctypes.windll.user32.EnumClipboardFormats
 GetClipboardFormatName = ctypes.windll.user32.GetClipboardFormatNameW
 
+# DPIAware funcs are not available on WinXP
+try:
+    IsProcessDPIAware = ctypes.windll.user32.IsProcessDPIAware
+    SetProcessDPIAware = ctypes.windll.user32.SetProcessDPIAware
+except:
+    IsProcessDPIAware = None
+    SetProcessDPIAware = None
+
+# DpiAwareness API funcs are available only from win 8.1 and greater
+# Supported types of DPI awareness described here:
+# https://msdn.microsoft.com/en-us/library/windows/desktop/dn280512(v=vs.85).aspx
+# typedef enum _Process_DPI_Awareness { 
+#   Process_DPI_Unaware            = 0,
+#   Process_System_DPI_Aware       = 1,
+#   Process_Per_Monitor_DPI_Aware  = 2
+# } Process_DPI_Awareness;
+try:
+    shcore = ctypes.windll.LoadLibrary(u"Shcore.dll")
+    SetProcessDpiAwareness = shcore.SetProcessDpiAwareness
+    GetProcessDpiAwareness = shcore.GetProcessDpiAwareness
+    Process_DPI_Awareness = {
+        "Process_DPI_Unaware"           : 0,
+        "Process_System_DPI_Aware"      : 1,
+        "Process_Per_Monitor_DPI_Aware" : 2
+        }
+except:
+    SetProcessDpiAwareness = None
+    GetProcessDpiAwareness = None
+    Process_DPI_Awareness = None
+
 GetQueueStatus = ctypes.windll.user32.GetQueueStatus
 
 LoadString = ctypes.windll.user32.LoadStringW
