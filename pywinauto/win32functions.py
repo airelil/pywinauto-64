@@ -22,6 +22,8 @@
 from __future__ import absolute_import
 
 import ctypes
+from pywinauto import win32defines
+from pywinauto.actionlogger import ActionLogger
 from ctypes import c_uint, c_short, c_long
 
 import sys
@@ -203,6 +205,16 @@ except:
     GetProcessDpiAwareness = None
     Process_DPI_Awareness = None
 
+# Setup DPI awareness for the python process if any is supported
+#import pywinauto
+if SetProcessDpiAwareness:
+    ActionLogger().log("Call SetProcessDpiAwareness")
+    SetProcessDpiAwareness(
+            Process_DPI_Awareness["Process_Per_Monitor_DPI_Aware"])
+elif SetProcessDPIAware:
+    ActionLogger().log("Call SetProcessDPIAware")
+    SetProcessDPIAware()
+
 GetQueueStatus = ctypes.windll.user32.GetQueueStatus
 
 LoadString = ctypes.windll.user32.LoadStringW
@@ -264,3 +276,37 @@ def WaitGuiThreadIdle(handle, timeout = 1):
     CloseHandle(hprocess)
 
     return ret
+
+def GetDpiAwarenessByPid(pid):
+    "Get DPI awareness properties of a process specified by ID"
+        
+    dpi_awareness = -1
+    hProcess = None
+    if GetProcessDpiAwareness and pid:
+        try:
+            hProcess = OpenProcess(
+                    win32defines.PROCESS_QUERY_INFORMATION, 
+                    0, 
+                    pid)
+        except pywintypes.error:
+            # process doesn't exist, exit with a default return value
+            return dpi_awareness
+
+        try:
+            dpi_awareness = ctypes.c_int()
+            hRes = GetProcessDpiAwareness(
+                    hProcess, 
+                    ctypes.byref(dpi_awareness))
+            print("GetDpiAwarenessByPid, awareness:",dpi_awareness.value, 
+                    "hRes:",hRes, 
+                    "pid:",pid)
+            CloseHandle(hProcess)
+            if hRes == 0:
+                return dpi_awareness.value
+        finally:
+            if hProcess:
+                CloseHandle(hProcess)
+
+    # GetProcessDpiAwareness is not supported or pid is not specified,
+    # return a default value
+    return dpi_awareness

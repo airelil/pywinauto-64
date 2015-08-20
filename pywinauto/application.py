@@ -78,19 +78,6 @@ from .actionlogger import ActionLogger
 from .timings import Timings, WaitUntil, TimeoutError, WaitUntilPasses
 from .sysinfo import is_x64_Python
 
-# Setup DPI awareness for the python process if any is supported
-#import pywinauto
-#pywinauto.actionlogger.enable()
-ActionLogger().log("Check DPI awareness")
-if win32functions.SetProcessDpiAwareness:
-    ActionLogger().log("Call SetProcessDpiAwareness")
-    win32functions.SetProcessDpiAwareness(
-            win32functions.Process_DPI_Awareness[
-                "Process_Per_Monitor_DPI_Aware"])
-elif win32functions.SetProcessDPIAware:
-    ActionLogger().log("Call SetProcessDPIAware")
-    win32functions.SetProcessDPIAware()
-
 class AppStartError(Exception):
     "There was a problem starting the Application"
     pass    #pragma: no cover
@@ -832,6 +819,8 @@ class Application(object):
 
         self.match_history = []
         self.use_history = False
+        self.dpi_awareness = None
+        self.actions = ActionLogger()
 
         # load the match history if a file was specifed
         # and it exists
@@ -936,6 +925,9 @@ class Application(object):
             except TimeoutError:
                 pass
 
+        self.dpi_awareness = win32functions.GetDpiAwarenessByPid(dwProcessId)
+        self.actions.log('Application DPI awareness=%d, pid=%d' %
+                (self.dpi_awareness, self.process))
         return self
 
     Start_ = start_
