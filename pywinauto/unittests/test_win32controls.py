@@ -419,6 +419,8 @@ class EditTestCases(unittest.TestCase):
     def testLineCount(self):
         "Test getting the line count of the edit control"
         self.dlg.Maximize()
+        print("testLineCount ctrl.LineCount=%d" %(self.ctrl.LineCount()))
+        print("testLineCount test_data.split len=%d" %(len(self.test_data.split("\r\n"))))
         for i in range(0, self.ctrl.LineCount()):
             self.assertEquals(
                 self.ctrl.LineLength(i),
