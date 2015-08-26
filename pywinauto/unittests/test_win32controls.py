@@ -365,7 +365,7 @@ class EditTestCases(unittest.TestCase):
         print(self.test_data.encode('utf-8', 'ignore'))
 
         ActionLogger().log("EditTestCases::setUp: start Notepad with test_file=%s" %(test_file))
-        app.start_("Notepad.exe " + test_file, timeout=30)
+        app.start_("Notepad.exe " + test_file, timeout=20)
 
         self.app = app
         self.dlg = app.UntitledNotepad
@@ -423,6 +423,8 @@ class EditTestCases(unittest.TestCase):
         self.dlg.Wait("active",20)
         print("testLineCount ctrl.LineCount=%d" %(self.ctrl.LineCount()))
         print("testLineCount test_data.split len=%d" %(len(self.test_data.split("\r\n"))))
+        print("testLineCount test_data:")
+        print(self.test_data.encode('utf-8', 'ignore'))
         for i in range(0, self.ctrl.LineCount()):
             self.assertEquals(
                 self.ctrl.LineLength(i),
