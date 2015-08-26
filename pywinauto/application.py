@@ -925,7 +925,7 @@ class Application(object):
             except TimeoutError:
                 pass
 
-        self.dpi_awareness = win32functions.GetDpiAwarenessByPid(dwProcessId)
+        #self.dpi_awareness = win32functions.GetDpiAwarenessByPid(dwProcessId)
         self.actions.log('Application DPI awareness=%d, pid=%d' %
                 (self.dpi_awareness, self.process))
         return self
