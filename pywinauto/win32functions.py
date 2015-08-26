@@ -297,9 +297,6 @@ def GetDpiAwarenessByPid(pid):
             hRes = GetProcessDpiAwareness(
                     hProcess, 
                     ctypes.byref(dpi_awareness))
-            print("GetDpiAwarenessByPid, awareness:",dpi_awareness.value, 
-                    "hRes:",hRes, 
-                    "pid:",pid)
             CloseHandle(hProcess)
             if hRes == 0:
                 return dpi_awareness.value
