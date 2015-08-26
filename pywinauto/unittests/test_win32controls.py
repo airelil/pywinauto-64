@@ -33,7 +33,7 @@ sys.path.append(".")
 from pywinauto.controls.win32_controls import *
 from pywinauto import XMLHelpers #, six
 from pywinauto.sysinfo import is_x64_Python, is_x64_OS
-
+from pywinauto.actionlogger import ActionLogger
 import unittest
 
 # following imports are not required for the tests
@@ -364,7 +364,8 @@ class EditTestCases(unittest.TestCase):
         print('self.test_data:')
         print(self.test_data.encode('utf-8', 'ignore'))
 
-        app.start_("Notepad.exe " + test_file, timeout=20)
+        ActionLogger().log("EditTestCases::setUp: start Notepad with test_file=%s" %(test_file))
+        app.start_("Notepad.exe " + test_file, timeout=30)
 
         self.app = app
         self.dlg = app.UntitledNotepad
@@ -419,6 +420,7 @@ class EditTestCases(unittest.TestCase):
     def testLineCount(self):
         "Test getting the line count of the edit control"
         self.dlg.Maximize()
+        self.dlg.Wait("active",20)
         print("testLineCount ctrl.LineCount=%d" %(self.ctrl.LineCount()))
         print("testLineCount test_data.split len=%d" %(len(self.test_data.split("\r\n"))))
         for i in range(0, self.ctrl.LineCount()):
