@@ -367,6 +367,8 @@ class EditTestCases(unittest.TestCase):
         ActionLogger().log("EditTestCases::setUp: start Notepad with test_file=%s" %(test_file))
         app.start_("Notepad.exe " + test_file, timeout=20)
 
+        ActionLogger().log("testLineCount test_data.split len=%d" %(len(self.test_data.split("\r\n"))))
+
         self.app = app
         self.dlg = app.UntitledNotepad
         self.ctrl = self.dlg.Edit.WrapperObject()
@@ -374,6 +376,7 @@ class EditTestCases(unittest.TestCase):
         self.old_pos = self.dlg.Rectangle
 
         self.dlg.MoveWindow(10, 10, 400, 400)
+        ActionLogger().log("testLineCount test_data.split len=%d" %(len(self.test_data.split("\r\n"))))
         #self.dlg.MenuSelect("Styles")
 
         # select show selection always, and show checkboxes
@@ -421,10 +424,8 @@ class EditTestCases(unittest.TestCase):
         "Test getting the line count of the edit control"
         self.dlg.Maximize()
         self.dlg.Wait("active",20)
-        print("testLineCount ctrl.LineCount=%d" %(self.ctrl.LineCount()))
         print("testLineCount test_data.split len=%d" %(len(self.test_data.split("\r\n"))))
-        print("testLineCount test_data:")
-        print(self.test_data.encode('utf-8', 'ignore'))
+        print("testLineCount ctrl.LineCount=%d" %(self.ctrl.LineCount()))
         for i in range(0, self.ctrl.LineCount()):
             self.assertEquals(
                 self.ctrl.LineLength(i),

@@ -207,13 +207,13 @@ except:
 
 # Setup DPI awareness for the python process if any is supported
 #import pywinauto
-#if SetProcessDpiAwareness:
-#    ActionLogger().log("Call SetProcessDpiAwareness")
-#    SetProcessDpiAwareness(
-#            Process_DPI_Awareness["Process_Per_Monitor_DPI_Aware"])
-#elif SetProcessDPIAware:
-#    ActionLogger().log("Call SetProcessDPIAware")
-#    SetProcessDPIAware()
+if SetProcessDpiAwareness:
+    ActionLogger().log("Call SetProcessDpiAwareness")
+    SetProcessDpiAwareness(
+            Process_DPI_Awareness["Process_Per_Monitor_DPI_Aware"])
+elif SetProcessDPIAware:
+    ActionLogger().log("Call SetProcessDPIAware")
+    SetProcessDPIAware()
 
 GetQueueStatus = ctypes.windll.user32.GetQueueStatus
 
