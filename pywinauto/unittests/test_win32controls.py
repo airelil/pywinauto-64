@@ -361,13 +361,14 @@ class EditTestCases(unittest.TestCase):
         # remove the BOM if it exists
         self.test_data = self.test_data.replace(repr("\xef\xbb\xbf"), "")
         #self.test_data = self.test_data.encode('utf-8', 'ignore') # XXX: decode raises UnicodeEncodeError even if 'ignore' is used!
-        print('self.test_data:')
-        print(self.test_data.encode('utf-8', 'ignore'))
+        #print('self.test_data:')
+        #print(self.test_data) #.encode('utf-8', 'ignore'))
 
+        #import pywinauto; pywinauto.actionlogger.enable()
         ActionLogger().log("EditTestCases::setUp: start Notepad with test_file=%s" %(test_file))
         app.start_("Notepad.exe " + test_file, timeout=20)
 
-        ActionLogger().log("testLineCount test_data.split len=%d" %(len(self.test_data.split("\r\n"))))
+        ActionLogger().log("testLineCount test_data.split len=%d" %(len(self.test_data.splitlines()))) #("\r\n"))))
 
         self.app = app
         self.dlg = app.UntitledNotepad
@@ -376,7 +377,7 @@ class EditTestCases(unittest.TestCase):
         self.old_pos = self.dlg.Rectangle
 
         self.dlg.MoveWindow(10, 10, 400, 400)
-        ActionLogger().log("testLineCount test_data.split len=%d" %(len(self.test_data.split("\r\n"))))
+        #ActionLogger().log("testLineCount test_data.split len=%d" %(len(self.test_data.splitlines())))#("\r\n"))))
         #self.dlg.MenuSelect("Styles")
 
         # select show selection always, and show checkboxes
@@ -424,12 +425,17 @@ class EditTestCases(unittest.TestCase):
         "Test getting the line count of the edit control"
         self.dlg.Maximize()
         self.dlg.Wait("active",20)
-        print("testLineCount test_data.split len=%d" %(len(self.test_data.split("\r\n"))))
+        #print("testLineCount test_data.split len=%d" %(len(self.test_data.split("\r\n"))))
         print("testLineCount ctrl.LineCount=%d" %(self.ctrl.LineCount()))
+        lines = self.test_data.splitlines(False)
+        lines.append("")
         for i in range(0, self.ctrl.LineCount()):
+            #import pdb; pdb.set_trace()
+            print(i)
             self.assertEquals(
                 self.ctrl.LineLength(i),
-                len(self.test_data.split("\r\n")[i]))
+                #len(self.test_data.split("\r\n")[i]))
+                len(lines[i])) #[:-1]))
 
     def testGetLine(self):
         "Test getting each line of the edit control"
