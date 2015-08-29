@@ -373,10 +373,14 @@ class EditTestCases(unittest.TestCase):
         self.app = app
         self.dlg = app.UntitledNotepad
         self.ctrl = self.dlg.Edit.WrapperObject()
+        self.dlg.Wait("ready visible", 10)
 
         self.old_pos = self.dlg.Rectangle
 
         self.dlg.MoveWindow(10, 10, 400, 400)
+        import time; time.sleep(4)
+        from PIL import ImageGrab
+        ImageGrab.grab().save("testTopWindow_%s.jpg"%(self.id()),"JPEG")
         #ActionLogger().log("testLineCount test_data.split len=%d" %(len(self.test_data.splitlines())))#("\r\n"))))
         #self.dlg.MenuSelect("Styles")
 
