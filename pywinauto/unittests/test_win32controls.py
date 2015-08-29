@@ -373,7 +373,7 @@ class EditTestCases(unittest.TestCase):
         self.app = app
         self.dlg = app.UntitledNotepad
         self.ctrl = self.dlg.Edit.WrapperObject()
-        self.dlg.Wait("ready visible", 10)
+        self.dlg.Wait("ready visible active enabled", 10)
 
         self.old_pos = self.dlg.Rectangle
 

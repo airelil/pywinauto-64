@@ -35,6 +35,7 @@ function run {
     nosetests --nologcapture --exclude=testall --exclude=test_SendKeys --with-xunit --with-coverage --cover-html --cover-html-dir=Coverage_report --cover-package=pywinauto --verbosity=3 pywinauto\unittests
     $success = $?
     Write-Host "result code of nosetests:" $success
+    copy testTopWindow_*.jpg Coverage_report\
 
     xslt_transform $input $stylesheet $output
 
