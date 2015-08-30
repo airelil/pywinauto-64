@@ -378,9 +378,11 @@ class EditTestCases(unittest.TestCase):
         self.old_pos = self.dlg.Rectangle
 
         self.dlg.MoveWindow(10, 10, 400, 400)
+        self.dlg.MenuItem("Format->Font").Select()
         import time; time.sleep(4)
         from PIL import ImageGrab
         ImageGrab.grab().save("testTopWindow_%s.jpg"%(self.id()),"JPEG")
+        self.app.Font.Ok.Click()
         #ActionLogger().log("testLineCount test_data.split len=%d" %(len(self.test_data.splitlines())))#("\r\n"))))
         #self.dlg.MenuSelect("Styles")
 
